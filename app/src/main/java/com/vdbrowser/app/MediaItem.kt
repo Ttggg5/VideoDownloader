@@ -13,4 +13,13 @@ data class MediaItem(
     val type: String,
     val label: String,
     val isStream: Boolean
-)
+) {
+    /** Resolved content length in bytes, or one of the sentinels below. */
+    @Volatile
+    var sizeBytes: Long = SIZE_UNKNOWN
+
+    companion object {
+        const val SIZE_UNKNOWN = -1L
+        const val SIZE_FETCHING = -2L
+    }
+}

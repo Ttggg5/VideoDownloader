@@ -14,7 +14,8 @@ import android.widget.Toast
  */
 object DownloadHelper {
 
-    fun enqueue(context: Context, item: MediaItem, pageUrl: String?, userAgent: String?) {
+    /** Enqueue a download and return its DownloadManager id, or -1 on failure. */
+    fun enqueue(context: Context, item: MediaItem, pageUrl: String?, userAgent: String?): Long {
         try {
             val request = DownloadManager.Request(Uri.parse(item.url)).apply {
                 CookieManager.getInstance().getCookie(item.url)?.let {
@@ -32,18 +33,21 @@ object DownloadHelper {
                 setAllowedOverRoaming(true)
             }
             val dm = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
-            dm.enqueue(request)
+            val id = dm.enqueue(request)
+            Downloads.register(id, sanitize(item.label, item.type))
             Toast.makeText(
                 context,
                 context.getString(R.string.download_started, item.label),
                 Toast.LENGTH_SHORT
             ).show()
+            return id
         } catch (e: Exception) {
             Toast.makeText(
                 context,
                 context.getString(R.string.download_failed, e.message ?: ""),
                 Toast.LENGTH_LONG
             ).show()
+            return -1L
         }
     }
 

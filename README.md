@@ -14,10 +14,18 @@ and lets you download them with one tap.
   2. **DOM scanning**: after each page loads, injected JavaScript reports the
      `src` of every `<video>` and `<source>` element back to the app.
 - **One-tap downloads** — a badge on the download button shows how many videos
-  were found. Tapping it opens a sheet; pick one and it downloads through the
-  system **DownloadManager** (with the page's cookies, `Referer`, and
-  user-agent so authenticated/gated media still works). Files land in the
-  device's **Downloads** folder with a completion notification.
+  were found. Tapping it opens a sheet that lists each video **with its file
+  size** (resolved via a HEAD / ranged-GET request carrying the page's
+  credentials); pick one and it downloads through the system **DownloadManager**
+  (with the page's cookies, `Referer`, and user-agent so authenticated/gated
+  media still works). Files land in the device's **Downloads** folder with a
+  completion notification.
+- **Download progress dialog** — the overflow (⋮) menu → *Downloads in progress*
+  shows every download started this session with a live progress bar and
+  byte counter, polled from `DownloadManager`.
+- **Ad/tracker blocker** — requests to a curated list of ad and analytics hosts
+  are dropped in `shouldInterceptRequest`. Toggle it from the overflow menu;
+  the choice is remembered.
 - Handles page-initiated downloads via `WebView.setDownloadListener` too.
 
 ## Project layout
@@ -26,11 +34,16 @@ and lets you download them with one tap.
 app/src/main/
 ├── AndroidManifest.xml
 ├── java/com/vdbrowser/app/
-│   ├── MainActivity.kt     # browser UI, WebView wiring, JS bridge
-│   ├── MediaSniffer.kt     # collects & de-dupes candidate media URLs
-│   ├── MediaItem.kt        # one detected resource
-│   ├── DownloadHelper.kt   # hands a file to DownloadManager
-│   └── MediaAdapter.kt     # list rows in the downloads sheet
+│   ├── MainActivity.kt              # browser UI, WebView wiring, JS bridge, menus
+│   ├── MediaSniffer.kt             # collects & de-dupes candidate media URLs
+│   ├── MediaItem.kt                # one detected resource (+ resolved size)
+│   ├── SizeFetcher.kt              # resolves remote content length off-thread
+│   ├── AdBlocker.kt                # host-based ad/tracker blocklist
+│   ├── DownloadHelper.kt           # hands a file to DownloadManager
+│   ├── Downloads.kt                # registry + live status from DownloadManager
+│   ├── DownloadProgressAdapter.kt  # rows in the progress dialog
+│   ├── MediaAdapter.kt             # rows in the detected-media sheet
+│   └── Util.kt                     # byte-size formatting
 └── res/                    # layouts, drawables, strings, theme, icon
 ```
 

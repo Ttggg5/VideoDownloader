@@ -12,4 +12,11 @@
     <string name="download_failed">Download failed: %1$s</string>
     <string name="download_description">Downloading with Video Downloader</string>
     <string name="stream_note">This is an adaptive stream (HLS/DASH). The downloaded playlist may need a converter to play offline.</string>
+    <string name="menu">More options</string>
+    <string name="menu_downloads">Downloads in progress</string>
+    <string name="menu_adblock">Ad blocker</string>
+    <string name="download_progress_title">Downloads</string>
+    <string name="no_downloads">No downloads yet.</string>
+    <string name="adblock_on">Ad blocker enabled</string>
+    <string name="adblock_off">Ad blocker disabled</string>
 </resources>

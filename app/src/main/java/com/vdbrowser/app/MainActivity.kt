@@ -1,10 +1,13 @@
 package com.vdbrowser.app
 
 import android.annotation.SuppressLint
+import android.app.DownloadManager
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.view.View
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
@@ -17,6 +20,7 @@ import android.webkit.WebResourceResponse
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import android.widget.PopupMenu
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
@@ -32,12 +36,17 @@ class MainActivity : AppCompatActivity() {
     private val sniffer = MediaSniffer()
     private var currentPageUrl: String? = null
 
+    private var adBlockEnabled = true
+
     private val homeUrl = "https://www.google.com"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
+        adBlockEnabled = getSharedPreferences("settings", MODE_PRIVATE)
+            .getBoolean("adblock", true)
 
         setupWebView()
         setupUi()
@@ -87,8 +96,12 @@ class MainActivity : AppCompatActivity() {
                 view: WebView?,
                 request: WebResourceRequest?
             ): WebResourceResponse? {
-                // Runs on a background thread; just record candidates and let the load proceed.
-                request?.url?.toString()?.let { sniffer.consider(it) }
+                // Runs on a background thread.
+                val url = request?.url?.toString() ?: return null
+                if (adBlockEnabled && AdBlocker.shouldBlock(url)) {
+                    return AdBlocker.blockedResponse()
+                }
+                sniffer.consider(url)
                 runOnUiThread { updateBadge() }
                 return null
             }
@@ -130,6 +143,7 @@ class MainActivity : AppCompatActivity() {
         }
         binding.btnRefresh.setOnClickListener { binding.webView.reload() }
         binding.btnDownloads.setOnClickListener { showMediaSheet() }
+        binding.btnMenu.setOnClickListener { showOverflowMenu() }
 
         binding.swipeRefresh.setOnRefreshListener {
             binding.webView.reload()
@@ -198,7 +212,7 @@ class MainActivity : AppCompatActivity() {
             recycler.visibility = View.VISIBLE
             empty.visibility = View.GONE
             recycler.layoutManager = LinearLayoutManager(this)
-            recycler.adapter = MediaAdapter(items) { item ->
+            val adapter = MediaAdapter(items) { item ->
                 if (item.isStream) {
                     Toast.makeText(this, R.string.stream_note, Toast.LENGTH_LONG).show()
                 }
@@ -207,7 +221,72 @@ class MainActivity : AppCompatActivity() {
                 )
                 sheet.dismiss()
             }
+            recycler.adapter = adapter
+
+            // Resolve each video's size in the background and update its row.
+            val ua = binding.webView.settings.userAgentString
+            items.forEach { item ->
+                if (item.sizeBytes == MediaItem.SIZE_UNKNOWN) {
+                    item.sizeBytes = MediaItem.SIZE_FETCHING
+                    SizeFetcher.fetch(item.url, currentPageUrl, ua) { size ->
+                        runOnUiThread { adapter.updateSize(item, size) }
+                    }
+                }
+            }
         }
+        sheet.show()
+    }
+
+    private fun showOverflowMenu() {
+        val popup = PopupMenu(this, binding.btnMenu)
+        popup.menu.add(0, MENU_DOWNLOADS, 0, R.string.menu_downloads)
+        popup.menu.add(0, MENU_ADBLOCK, 1, getString(R.string.menu_adblock)).apply {
+            isCheckable = true
+            isChecked = adBlockEnabled
+        }
+        popup.setOnMenuItemClickListener { item ->
+            when (item.itemId) {
+                MENU_DOWNLOADS -> { showDownloadsDialog(); true }
+                MENU_ADBLOCK -> { toggleAdBlock(); true }
+                else -> false
+            }
+        }
+        popup.show()
+    }
+
+    private fun toggleAdBlock() {
+        adBlockEnabled = !adBlockEnabled
+        getSharedPreferences("settings", MODE_PRIVATE).edit()
+            .putBoolean("adblock", adBlockEnabled).apply()
+        val msg = if (adBlockEnabled) R.string.adblock_on else R.string.adblock_off
+        Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
+    }
+
+    /** Bottom sheet that polls DownloadManager and shows live progress for each download. */
+    private fun showDownloadsDialog() {
+        val sheet = BottomSheetDialog(this)
+        val content = layoutInflater.inflate(R.layout.dialog_downloads, null)
+        sheet.setContentView(content)
+
+        val recycler = content.findViewById<RecyclerView>(R.id.downloadsList)
+        val empty = content.findViewById<TextView>(R.id.downloadsEmpty)
+        recycler.layoutManager = LinearLayoutManager(this)
+        val adapter = DownloadProgressAdapter(emptyList())
+        recycler.adapter = adapter
+
+        val dm = getSystemService(DOWNLOAD_SERVICE) as DownloadManager
+        val handler = Handler(Looper.getMainLooper())
+        val refresh = object : Runnable {
+            override fun run() {
+                val statuses = Downloads.statuses(dm)
+                empty.visibility = if (statuses.isEmpty()) View.VISIBLE else View.GONE
+                recycler.visibility = if (statuses.isEmpty()) View.GONE else View.VISIBLE
+                adapter.submit(statuses)
+                handler.postDelayed(this, 800)
+            }
+        }
+        sheet.setOnShowListener { handler.post(refresh) }
+        sheet.setOnDismissListener { handler.removeCallbacks(refresh) }
         sheet.show()
     }
 
@@ -246,5 +325,10 @@ class MainActivity : AppCompatActivity() {
             sniffer.consider(url)
             runOnUiThread { updateBadge() }
         }
+    }
+
+    companion object {
+        private const val MENU_DOWNLOADS = 1
+        private const val MENU_ADBLOCK = 2
     }
 }

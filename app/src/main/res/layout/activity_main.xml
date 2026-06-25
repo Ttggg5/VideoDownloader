@@ -82,6 +82,14 @@
                 android:visibility="gone"
                 tools:ignore="SmallSp" />
         </FrameLayout>
+
+        <ImageButton
+            android:id="@+id/btnMenu"
+            android:layout_width="40dp"
+            android:layout_height="44dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/menu"
+            android:src="@drawable/ic_more" />
     </LinearLayout>
 
     <ProgressBar
