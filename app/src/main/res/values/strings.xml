@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Video Downloader</string>
+    <string name="search_or_url">Search or type a URL</string>
+    <string name="back">Back</string>
+    <string name="forward">Forward</string>
+    <string name="refresh">Refresh</string>
+    <string name="downloads">Downloads</string>
+    <string name="no_media">No videos detected on this page yet.\n\nPlay or scroll to the video, then reopen this list.</string>
+    <string name="detected_media">Detected media (%1$d)</string>
+    <string name="download_started">Download started: %1$s</string>
+    <string name="download_failed">Download failed: %1$s</string>
+    <string name="download_description">Downloading with Video Downloader</string>
+    <string name="stream_note">This is an adaptive stream (HLS/DASH). The downloaded playlist may need a converter to play offline.</string>
+</resources>
