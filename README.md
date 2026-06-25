@@ -7,6 +7,10 @@ and lets you download them with one tap.
 
 - **Full browser** — address/search bar, back/forward/refresh, swipe-to-refresh,
   cookies, JavaScript, and zoom, all built on Android's `WebView`.
+- **Tabs (Chrome-style)** — a tab-count button opens a tab switcher to create,
+  switch, and close tabs; each tab keeps its own history, scroll position and
+  detected-media list. Links that open a new window (`target=_blank` /
+  `window.open`) spawn a new tab.
 - **Automatic video detection** — two complementary strategies:
   1. **Network sniffing**: every request the page makes is inspected
      (`WebViewClient.shouldInterceptRequest`); anything that looks like media
@@ -34,7 +38,9 @@ and lets you download them with one tap.
 app/src/main/
 ├── AndroidManifest.xml
 ├── java/com/vdbrowser/app/
-│   ├── MainActivity.kt              # browser UI, WebView wiring, JS bridge, menus
+│   ├── MainActivity.kt              # browser UI, tabs, WebView wiring, menus
+│   ├── Tab.kt                      # one tab: WebView + its own media sniffer
+│   ├── TabAdapter.kt               # rows in the tab switcher
 │   ├── MediaSniffer.kt             # collects & de-dupes candidate media URLs
 │   ├── MediaItem.kt                # one detected resource (+ resolved size)
 │   ├── SizeFetcher.kt              # resolves remote content length off-thread

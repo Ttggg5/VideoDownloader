@@ -19,4 +19,10 @@
     <string name="no_downloads">No downloads yet.</string>
     <string name="adblock_on">Ad blocker enabled</string>
     <string name="adblock_off">Ad blocker disabled</string>
+    <string name="menu_new_tab">New tab</string>
+    <string name="menu_forward">Forward</string>
+    <string name="menu_refresh">Refresh</string>
+    <string name="tabs">Tabs</string>
+    <string name="tabs_title">Tabs (%1$d)</string>
+    <string name="close_tab">Close tab</string>
 </resources>
