@@ -18,6 +18,10 @@ android {
     buildTypes {
         release {
             isMinifyEnabled = false
+            // Self-sign the release build with the auto-generated debug key so the
+            // resulting APK installs directly. Replace with a real release keystore
+            // before publishing to any store.
+            signingConfig = signingConfigs.getByName("debug")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
