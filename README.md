@@ -10,7 +10,8 @@ and lets you download them with one tap.
 - **Tabs (Chrome-style)** — a tab-count button opens a tab switcher to create,
   switch, and close tabs; each tab keeps its own history, scroll position and
   detected-media list. Links that open a new window (`target=_blank` /
-  `window.open`) spawn a new tab.
+  `window.open`) spawn a new tab. On **large screens (tablets/foldables, sw600dp)**
+  a desktop-style horizontal tab strip is shown on top instead.
 - **Automatic video detection** — two complementary strategies:
   1. **Network sniffing**: every request the page makes is inspected
      (`WebViewClient.shouldInterceptRequest`); anything that looks like media

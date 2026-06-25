@@ -45,6 +45,7 @@ class MainActivity : AppCompatActivity() {
     private val currentTab get() = tabs[currentIndex]
 
     private var adBlockEnabled = true
+    private var tabStripAdapter: TabStripAdapter? = null
 
     private val homeUrl = "https://www.google.com"
 
@@ -121,6 +122,13 @@ class MainActivity : AppCompatActivity() {
 
     private fun updateTabCount() {
         binding.tabCount.text = tabs.size.toString()
+        tabStripAdapter?.notifyDataSetChanged()
+        binding.tabStrip?.let { strip -> strip.post { strip.scrollToPosition(currentIndex) } }
+    }
+
+    /** Refresh the on-top tab strip (e.g. after a title or URL changes). */
+    private fun refreshTabStrip() {
+        tabStripAdapter?.notifyDataSetChanged()
     }
 
     @SuppressLint("SetJavaScriptEnabled")
@@ -153,6 +161,7 @@ class MainActivity : AppCompatActivity() {
                     if (!binding.urlBar.hasFocus()) binding.urlBar.setText(url)
                     updateBadge()
                 }
+                refreshTabStrip()
             }
 
             override fun onPageFinished(view: WebView?, url: String?) {
@@ -160,6 +169,7 @@ class MainActivity : AppCompatActivity() {
                 tab.url = url ?: tab.url
                 injectScanner(view)
                 if (tab === currentTab) updateNavButtons()
+                refreshTabStrip()
             }
 
             override fun shouldInterceptRequest(
@@ -186,7 +196,10 @@ class MainActivity : AppCompatActivity() {
             }
 
             override fun onReceivedTitle(view: WebView?, title: String?) {
-                if (!title.isNullOrBlank()) tab.title = title
+                if (!title.isNullOrBlank()) {
+                    tab.title = title
+                    refreshTabStrip()
+                }
             }
 
             override fun onCreateWindow(
@@ -232,6 +245,22 @@ class MainActivity : AppCompatActivity() {
         binding.btnDownloads.setOnClickListener { showMediaSheet() }
         binding.btnTabs.setOnClickListener { showTabSwitcher() }
         binding.btnMenu.setOnClickListener { showOverflowMenu() }
+
+        // Large screens (sw600dp) show a desktop-style tab strip on top.
+        binding.tabStrip?.let { strip ->
+            strip.layoutManager =
+                LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
+            tabStripAdapter = TabStripAdapter(
+                tabs = tabs,
+                currentIndex = { currentIndex },
+                onSelect = { i -> selectTab(i) },
+                onClose = { i -> closeTab(i) }
+            )
+            strip.adapter = tabStripAdapter
+        }
+        binding.btnNewTabStrip?.setOnClickListener {
+            addTabAndSelect(createTab(homeUrl))
+        }
 
         binding.swipeRefresh.setOnRefreshListener {
             currentTab.webView.reload()
