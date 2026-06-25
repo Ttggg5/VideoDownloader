@@ -1,55 +1,47 @@
 package com.vdbrowser.app
 
-import android.app.DownloadManager
 import android.content.Context
-import android.net.Uri
-import android.os.Environment
+import android.content.Intent
 import android.webkit.CookieManager
+import android.webkit.MimeTypeMap
 import android.widget.Toast
+import androidx.core.content.ContextCompat
 
 /**
- * Hands a [MediaItem] off to the system [DownloadManager], replaying the browser's
- * authentication context (cookies), user-agent and the page URL as Referer so that
- * hosts that gate media behind those headers still serve the file.
+ * Builds a download request from a [MediaItem] and hands it to [DownloadService],
+ * which runs the multi-connection [DownloadEngine]. The browser's cookies,
+ * user-agent and the page URL (as Referer) are replayed so gated media works.
  */
 object DownloadHelper {
 
-    /** Enqueue a download and return its DownloadManager id, or -1 on failure. */
-    fun enqueue(context: Context, item: MediaItem, pageUrl: String?, userAgent: String?): Long {
+    fun enqueue(context: Context, item: MediaItem, pageUrl: String?, userAgent: String?) {
         try {
-            val request = DownloadManager.Request(Uri.parse(item.url)).apply {
-                CookieManager.getInstance().getCookie(item.url)?.let {
-                    if (it.isNotBlank()) addRequestHeader("Cookie", it)
-                }
-                if (!userAgent.isNullOrBlank()) addRequestHeader("User-Agent", userAgent)
-                if (!pageUrl.isNullOrBlank()) addRequestHeader("Referer", pageUrl)
-
-                val fileName = sanitize(item.label, item.type)
-                setTitle(fileName)
-                setDescription(context.getString(R.string.download_description))
-                setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
-                setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, fileName)
-                setAllowedOverMetered(true)
-                setAllowedOverRoaming(true)
+            val fileName = sanitize(item.label, item.type)
+            val intent = Intent(context, DownloadService::class.java).apply {
+                putExtra(DownloadService.EX_URL, item.url)
+                putExtra(DownloadService.EX_NAME, fileName)
+                putExtra(DownloadService.EX_MIME, mimeFor(item.type))
+                putExtra(DownloadService.EX_COOKIE, CookieManager.getInstance().getCookie(item.url))
+                putExtra(DownloadService.EX_UA, userAgent)
+                putExtra(DownloadService.EX_REFERER, pageUrl)
             }
-            val dm = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
-            val id = dm.enqueue(request)
-            Downloads.register(id, sanitize(item.label, item.type))
+            ContextCompat.startForegroundService(context, intent)
             Toast.makeText(
                 context,
                 context.getString(R.string.download_started, item.label),
                 Toast.LENGTH_SHORT
             ).show()
-            return id
         } catch (e: Exception) {
             Toast.makeText(
                 context,
                 context.getString(R.string.download_failed, e.message ?: ""),
                 Toast.LENGTH_LONG
             ).show()
-            return -1L
         }
     }
+
+    private fun mimeFor(type: String): String? =
+        MimeTypeMap.getSingleton().getMimeTypeFromExtension(type.lowercase())
 
     private fun sanitize(label: String, type: String): String {
         var name = label.substringBefore('?').replace(Regex("[^a-zA-Z0-9._-]"), "_")

@@ -1,10 +1,12 @@
 package com.vdbrowser.app
 
+import android.Manifest
 import android.annotation.SuppressLint
-import android.app.DownloadManager
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.graphics.Bitmap
+import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -27,6 +29,7 @@ import android.widget.PopupMenu
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -45,6 +48,9 @@ class MainActivity : AppCompatActivity() {
 
     private val homeUrl = "https://www.google.com"
 
+    private val notificationPermission =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { /* ignored */ }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
@@ -53,6 +59,7 @@ class MainActivity : AppCompatActivity() {
         adBlockEnabled = getSharedPreferences("settings", MODE_PRIVATE)
             .getBoolean("adblock", true)
 
+        requestNotificationPermissionIfNeeded()
         setupUi()
         setupBackNavigation()
 
@@ -390,7 +397,7 @@ class MainActivity : AppCompatActivity() {
         Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
     }
 
-    /** Bottom sheet that polls DownloadManager and shows live progress for each download. */
+    /** Bottom sheet that polls the download store and shows live progress for each download. */
     private fun showDownloadsDialog() {
         val sheet = BottomSheetDialog(this)
         val content = layoutInflater.inflate(R.layout.dialog_downloads, null)
@@ -402,15 +409,14 @@ class MainActivity : AppCompatActivity() {
         val adapter = DownloadProgressAdapter(emptyList())
         recycler.adapter = adapter
 
-        val dm = getSystemService(DOWNLOAD_SERVICE) as DownloadManager
         val handler = Handler(Looper.getMainLooper())
         val refresh = object : Runnable {
             override fun run() {
-                val statuses = Downloads.statuses(dm)
+                val statuses = Downloads.snapshot()
                 empty.visibility = if (statuses.isEmpty()) View.VISIBLE else View.GONE
                 recycler.visibility = if (statuses.isEmpty()) View.GONE else View.VISIBLE
                 adapter.submit(statuses)
-                handler.postDelayed(this, 800)
+                handler.postDelayed(this, 700)
             }
         }
         sheet.setOnShowListener { handler.post(refresh) }
@@ -428,6 +434,15 @@ class MainActivity : AppCompatActivity() {
 
     private fun updateNavButtons() {
         binding.btnBack.alpha = if (currentTab.webView.canGoBack()) 1f else 0.4f
+    }
+
+    private fun requestNotificationPermissionIfNeeded() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) !=
+            PackageManager.PERMISSION_GRANTED
+        ) {
+            notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
     }
 
     private fun hideKeyboard() {

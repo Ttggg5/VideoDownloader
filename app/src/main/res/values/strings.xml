@@ -25,4 +25,8 @@
     <string name="tabs">Tabs</string>
     <string name="tabs_title">Tabs (%1$d)</string>
     <string name="close_tab">Close tab</string>
+    <string name="notif_channel">Downloads</string>
+    <string name="notif_downloading">Downloading %1$d file(s)</string>
+    <string name="notif_done">Download complete</string>
+    <string name="notif_done_some_failed">Downloads finished (%1$d failed)</string>
 </resources>

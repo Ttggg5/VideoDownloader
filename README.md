@@ -20,13 +20,17 @@ and lets you download them with one tap.
 - **One-tap downloads** — a badge on the download button shows how many videos
   were found. Tapping it opens a sheet that lists each video **with its file
   size** (resolved via a HEAD / ranged-GET request carrying the page's
-  credentials); pick one and it downloads through the system **DownloadManager**
-  (with the page's cookies, `Referer`, and user-agent so authenticated/gated
-  media still works). Files land in the device's **Downloads** folder with a
-  completion notification.
+  credentials); pick one and it downloads with the page's cookies, `Referer`,
+  and user-agent so authenticated/gated media still works. Files land in the
+  device's **Downloads** folder.
+- **Fast multi-connection downloads** — a custom engine splits each file into up
+  to 6 byte-range segments fetched **in parallel** (when the server supports
+  HTTP ranges) and writes them into one file via positional channel writes,
+  which is typically much faster than a single stream. It runs in a foreground
+  service so downloads continue in the background, with a progress notification.
 - **Download progress dialog** — the overflow (⋮) menu → *Downloads in progress*
-  shows every download started this session with a live progress bar and
-  byte counter, polled from `DownloadManager`.
+  shows every download this session with a live progress bar, **transfer speed**,
+  and byte counter.
 - **Ad/tracker blocker** — requests to a curated list of ad and analytics hosts
   are dropped in `shouldInterceptRequest`. Toggle it from the overflow menu;
   the choice is remembered.
@@ -45,8 +49,10 @@ app/src/main/
 │   ├── MediaItem.kt                # one detected resource (+ resolved size)
 │   ├── SizeFetcher.kt              # resolves remote content length off-thread
 │   ├── AdBlocker.kt                # host-based ad/tracker blocklist
-│   ├── DownloadHelper.kt           # hands a file to DownloadManager
-│   ├── Downloads.kt                # registry + live status from DownloadManager
+│   ├── DownloadHelper.kt           # builds a request and starts the service
+│   ├── DownloadEngine.kt           # multi-connection (parallel range) downloader
+│   ├── DownloadService.kt          # foreground service + progress notification
+│   ├── Downloads.kt                # in-memory progress registry (+ speed)
 │   ├── DownloadProgressAdapter.kt  # rows in the progress dialog
 │   ├── MediaAdapter.kt             # rows in the detected-media sheet
 │   └── Util.kt                     # byte-size formatting

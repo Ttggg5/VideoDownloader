@@ -34,7 +34,7 @@ class MediaSniffer {
     /** Inspect a URL and remember it if it looks like downloadable media. */
     fun consider(rawUrl: String?) {
         if (rawUrl.isNullOrBlank() || items.containsKey(rawUrl)) return
-        // Blob URLs are in-memory and cannot be fetched by DownloadManager.
+        // Blob URLs are in-memory and cannot be fetched over HTTP.
         if (rawUrl.startsWith("blob:") || rawUrl.startsWith("data:")) return
 
         val uri = runCatching { Uri.parse(rawUrl) }.getOrNull() ?: return

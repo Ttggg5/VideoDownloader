@@ -1,6 +1,5 @@
 package com.vdbrowser.app
 
-import android.app.DownloadManager
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -8,9 +7,9 @@ import android.widget.ProgressBar
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 
-/** Shows live progress for each registered download in the progress dialog. */
+/** Shows live progress (with speed) for each download in the progress dialog. */
 class DownloadProgressAdapter(
-    private var items: List<Downloads.Status>
+    private var items: List<Downloads.Snapshot>
 ) : RecyclerView.Adapter<DownloadProgressAdapter.VH>() {
 
     class VH(view: View) : RecyclerView.ViewHolder(view) {
@@ -31,17 +30,16 @@ class DownloadProgressAdapter(
         holder.title.text = item.title
 
         val percent = if (item.total > 0) ((item.downloaded * 100) / item.total).toInt() else 0
-        holder.bar.isIndeterminate =
-            item.state == DownloadManager.STATUS_RUNNING && item.total <= 0
+        val running = item.state == Downloads.State.RUNNING
+        holder.bar.isIndeterminate = running && item.total <= 0
         if (!holder.bar.isIndeterminate) holder.bar.progress = percent
 
         holder.state.text = when (item.state) {
-            DownloadManager.STATUS_PENDING -> "Pending"
-            DownloadManager.STATUS_RUNNING -> if (item.total > 0) "Downloading · $percent%" else "Downloading"
-            DownloadManager.STATUS_PAUSED -> "Paused"
-            DownloadManager.STATUS_SUCCESSFUL -> "Completed"
-            DownloadManager.STATUS_FAILED -> "Failed"
-            else -> "Queued"
+            Downloads.State.RUNNING ->
+                if (item.total > 0) "Downloading · $percent% · ${speed(item.speed)}"
+                else "Downloading · ${speed(item.speed)}"
+            Downloads.State.COMPLETED -> "Completed"
+            Downloads.State.FAILED -> "Failed"
         }
 
         holder.bytes.text = if (item.total > 0) {
@@ -53,8 +51,11 @@ class DownloadProgressAdapter(
 
     override fun getItemCount(): Int = items.size
 
-    fun submit(newItems: List<Downloads.Status>) {
+    fun submit(newItems: List<Downloads.Snapshot>) {
         items = newItems
         notifyDataSetChanged()
     }
+
+    private fun speed(bytesPerSec: Long): String =
+        if (bytesPerSec <= 0) "…" else "${formatBytes(bytesPerSec)}/s"
 }
