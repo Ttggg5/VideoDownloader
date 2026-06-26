@@ -3,16 +3,19 @@ package com.vdbrowser.app
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 
-/** Renders the list of detected media (with sizes) inside the downloads bottom sheet. */
+/** Renders detected media (thumbnail + size) inside the downloads bottom sheet. */
 class MediaAdapter(
     private val items: List<MediaItem>,
-    private val onClick: (MediaItem) -> Unit
+    private val onClick: (MediaItem) -> Unit,
+    private val onNeedThumb: (MediaItem) -> Unit = {}
 ) : RecyclerView.Adapter<MediaAdapter.VH>() {
 
     class VH(view: View) : RecyclerView.ViewHolder(view) {
+        val thumb: ImageView = view.findViewById(R.id.mediaThumb)
         val title: TextView = view.findViewById(R.id.mediaTitle)
         val subtitle: TextView = view.findViewById(R.id.mediaSubtitle)
         val size: TextView = view.findViewById(R.id.mediaSize)
@@ -34,6 +37,20 @@ class MediaAdapter(
             MediaItem.SIZE_UNKNOWN -> "—"
             else -> formatBytes(item.sizeBytes)
         }
+
+        val thumb = item.thumbnail
+        if (thumb != null) {
+            holder.thumb.scaleType = ImageView.ScaleType.CENTER_CROP
+            holder.thumb.setImageBitmap(thumb)
+        } else {
+            holder.thumb.scaleType = ImageView.ScaleType.CENTER_INSIDE
+            holder.thumb.setImageResource(R.drawable.ic_download)
+            if (!item.thumbRequested) {
+                item.thumbRequested = true
+                onNeedThumb(item)
+            }
+        }
+
         holder.itemView.setOnClickListener { onClick(item) }
     }
 
@@ -42,6 +59,12 @@ class MediaAdapter(
     /** Refresh the size cell for a given item once its length is resolved. */
     fun updateSize(item: MediaItem, size: Long) {
         item.sizeBytes = size
+        val index = items.indexOf(item)
+        if (index >= 0) notifyItemChanged(index)
+    }
+
+    /** Refresh the row once its thumbnail is resolved. */
+    fun updateThumb(item: MediaItem) {
         val index = items.indexOf(item)
         if (index >= 0) notifyItemChanged(index)
     }

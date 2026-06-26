@@ -11,6 +11,7 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.os.Message
+import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.view.inputmethod.EditorInfo
@@ -104,6 +105,7 @@ class MainActivity : AppCompatActivity() {
         updateBadge()
         updateNavButtons()
         updateTabCount()
+        updateBookmarkIcon()
     }
 
     private fun closeTab(index: Int) {
@@ -161,6 +163,7 @@ class MainActivity : AppCompatActivity() {
                 if (tab === currentTab) {
                     if (!binding.urlBar.hasFocus()) binding.urlBar.setText(url)
                     updateBadge()
+                    updateBookmarkIcon()
                 }
                 refreshTabStrip()
             }
@@ -169,7 +172,10 @@ class MainActivity : AppCompatActivity() {
                 super.onPageFinished(view, url)
                 tab.url = url ?: tab.url
                 injectScanner(view)
-                if (tab === currentTab) updateNavButtons()
+                if (tab === currentTab) {
+                    updateNavButtons()
+                    updateBookmarkIcon()
+                }
                 refreshTabStrip()
             }
 
@@ -243,9 +249,13 @@ class MainActivity : AppCompatActivity() {
         binding.btnBack.setOnClickListener {
             if (currentTab.webView.canGoBack()) currentTab.webView.goBack()
         }
-        binding.btnDownloads.setOnClickListener { showMediaSheet() }
+        binding.btnBookmark.setOnClickListener {
+            toggleBookmark()
+            updateBookmarkIcon()
+        }
         binding.btnTabs.setOnClickListener { showTabSwitcher() }
         binding.btnMenu.setOnClickListener { showOverflowMenu() }
+        setupFloatingDownloadButton()
 
         // Large screens (sw600dp) show a desktop-style tab strip on top.
         binding.tabStrip?.let { strip ->
@@ -283,6 +293,55 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         })
+    }
+
+    /** The download FAB opens the media sheet on tap and can be dragged anywhere. */
+    @SuppressLint("ClickableViewAccessibility")
+    private fun setupFloatingDownloadButton() {
+        // Listener sits on the FAB (the touchable child) but moves its container.
+        val container = binding.dlFab
+        var downX = 0f
+        var downY = 0f
+        var offsetX = 0f
+        var offsetY = 0f
+        var dragged = false
+        val touchSlop = 12f
+
+        binding.btnDownloads.setOnTouchListener { _, event ->
+            val parent = container.parent as View
+            when (event.actionMasked) {
+                MotionEvent.ACTION_DOWN -> {
+                    downX = event.rawX
+                    downY = event.rawY
+                    offsetX = container.x - event.rawX
+                    offsetY = container.y - event.rawY
+                    dragged = false
+                    true
+                }
+                MotionEvent.ACTION_MOVE -> {
+                    if (kotlin.math.abs(event.rawX - downX) > touchSlop ||
+                        kotlin.math.abs(event.rawY - downY) > touchSlop
+                    ) dragged = true
+                    container.x = (event.rawX + offsetX)
+                        .coerceIn(0f, (parent.width - container.width).toFloat())
+                    container.y = (event.rawY + offsetY)
+                        .coerceIn(0f, (parent.height - container.height).toFloat())
+                    true
+                }
+                MotionEvent.ACTION_UP -> {
+                    if (!dragged) showMediaSheet()
+                    true
+                }
+                else -> false
+            }
+        }
+    }
+
+    private fun updateBookmarkIcon() {
+        val marked = Bookmarks.isBookmarked(this, currentTab.url)
+        binding.btnBookmark.setImageResource(
+            if (marked) R.drawable.ic_star else R.drawable.ic_star_border
+        )
     }
 
     private fun navigate(input: String) {
@@ -338,20 +397,30 @@ class MainActivity : AppCompatActivity() {
             recycler.visibility = View.VISIBLE
             empty.visibility = View.GONE
             recycler.layoutManager = LinearLayoutManager(this)
-            val adapter = MediaAdapter(items) { item ->
-                if (item.isStream) {
-                    Toast.makeText(this, R.string.stream_note, Toast.LENGTH_LONG).show()
+            val ua = currentTab.webView.settings.userAgentString
+            val pageUrl = currentTab.url
+            lateinit var adapter: MediaAdapter
+            adapter = MediaAdapter(
+                items,
+                onClick = { item ->
+                    if (item.isStream) {
+                        Toast.makeText(this, R.string.stream_note, Toast.LENGTH_LONG).show()
+                    }
+                    DownloadHelper.enqueue(this, item, pageUrl, ua)
+                    sheet.dismiss()
+                },
+                onNeedThumb = { item ->
+                    ThumbnailLoader.load(item.url, pageUrl, ua) { bmp ->
+                        if (bmp != null) runOnUiThread {
+                            item.thumbnail = bmp
+                            adapter.updateThumb(item)
+                        }
+                    }
                 }
-                DownloadHelper.enqueue(
-                    this, item, currentTab.url, currentTab.webView.settings.userAgentString
-                )
-                sheet.dismiss()
-            }
+            )
             recycler.adapter = adapter
 
             // Resolve each video's size in the background and update its row.
-            val ua = currentTab.webView.settings.userAgentString
-            val pageUrl = currentTab.url
             items.forEach { item ->
                 if (item.sizeBytes == MediaItem.SIZE_UNKNOWN) {
                     item.sizeBytes = MediaItem.SIZE_FETCHING
@@ -401,14 +470,10 @@ class MainActivity : AppCompatActivity() {
         popup.menu.add(0, MENU_FORWARD, 1, R.string.menu_forward).isEnabled =
             currentTab.webView.canGoForward()
         popup.menu.add(0, MENU_REFRESH, 2, R.string.menu_refresh)
-        popup.menu.add(0, MENU_BOOKMARK_ADD, 3, getString(R.string.menu_bookmark_add)).apply {
-            isCheckable = true
-            isChecked = Bookmarks.isBookmarked(this@MainActivity, currentTab.url)
-        }
-        popup.menu.add(0, MENU_BOOKMARKS, 4, R.string.bookmarks)
-        popup.menu.add(0, MENU_DOWNLOADS, 5, R.string.menu_downloads)
-        popup.menu.add(0, MENU_HISTORY, 6, R.string.menu_history)
-        popup.menu.add(0, MENU_ADBLOCK, 7, getString(R.string.menu_adblock)).apply {
+        popup.menu.add(0, MENU_BOOKMARKS, 3, R.string.bookmarks)
+        popup.menu.add(0, MENU_DOWNLOADS, 4, R.string.menu_downloads)
+        popup.menu.add(0, MENU_HISTORY, 5, R.string.menu_history)
+        popup.menu.add(0, MENU_ADBLOCK, 6, getString(R.string.menu_adblock)).apply {
             isCheckable = true
             isChecked = adBlockEnabled
         }
@@ -417,7 +482,6 @@ class MainActivity : AppCompatActivity() {
                 MENU_NEW_TAB -> { addTabAndSelect(createTab(homeUrl)); true }
                 MENU_FORWARD -> { if (currentTab.webView.canGoForward()) currentTab.webView.goForward(); true }
                 MENU_REFRESH -> { currentTab.webView.reload(); true }
-                MENU_BOOKMARK_ADD -> { toggleBookmark(); true }
                 MENU_BOOKMARKS -> { showBookmarks(); true }
                 MENU_DOWNLOADS -> { showDownloadsDialog(); true }
                 MENU_HISTORY -> { showHistory(); true }
@@ -589,7 +653,6 @@ class MainActivity : AppCompatActivity() {
         private const val MENU_NEW_TAB = 1
         private const val MENU_FORWARD = 2
         private const val MENU_REFRESH = 3
-        private const val MENU_BOOKMARK_ADD = 4
         private const val MENU_BOOKMARKS = 5
         private const val MENU_DOWNLOADS = 6
         private const val MENU_HISTORY = 7

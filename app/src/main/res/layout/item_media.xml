@@ -9,10 +9,13 @@
     android:paddingVertical="14dp">
 
     <ImageView
-        android:layout_width="28dp"
-        android:layout_height="28dp"
+        android:id="@+id/mediaThumb"
+        android:layout_width="64dp"
+        android:layout_height="40dp"
         android:layout_marginEnd="16dp"
+        android:background="#22000000"
         android:contentDescription="@string/downloads"
+        android:scaleType="centerCrop"
         android:src="@drawable/ic_download" />
 
     <LinearLayout

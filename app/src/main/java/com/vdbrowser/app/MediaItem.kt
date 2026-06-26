@@ -18,6 +18,13 @@ data class MediaItem(
     @Volatile
     var sizeBytes: Long = SIZE_UNKNOWN
 
+    /** Lazily-loaded preview frame, and whether a load has been attempted. */
+    @Volatile
+    var thumbnail: android.graphics.Bitmap? = null
+
+    @Volatile
+    var thumbRequested: Boolean = false
+
     companion object {
         const val SIZE_UNKNOWN = -1L
         const val SIZE_FETCHING = -2L

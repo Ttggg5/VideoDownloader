@@ -1,152 +1,176 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
     android:fitsSystemWindows="true">
 
-    <!-- Desktop-style tab strip on top (large screens only) -->
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:background="?attr/colorSurface"
-        android:paddingHorizontal="8dp"
-        android:paddingTop="6dp">
+        android:layout_height="match_parent"
+        android:orientation="vertical">
 
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/tabStrip"
-            android:layout_width="0dp"
-            android:layout_height="40dp"
-            android:layout_weight="1"
-            android:overScrollMode="never"
-            android:scrollbars="none" />
+        <!-- Desktop-style tab strip on top (large screens only) -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:background="?attr/colorSurface"
+            android:paddingHorizontal="8dp"
+            android:paddingTop="6dp">
 
-        <ImageButton
-            android:id="@+id/btnNewTabStrip"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="@string/menu_new_tab"
-            android:src="@drawable/ic_add" />
-    </LinearLayout>
-
-    <!-- Toolbar: back + address bar + downloads + menu -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:background="?attr/colorSurface"
-        android:paddingHorizontal="4dp"
-        android:paddingVertical="6dp">
-
-        <ImageButton
-            android:id="@+id/btnBack"
-            android:layout_width="44dp"
-            android:layout_height="44dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="@string/back"
-            android:src="@drawable/ic_back" />
-
-        <EditText
-            android:id="@+id/urlBar"
-            android:layout_width="0dp"
-            android:layout_height="44dp"
-            android:layout_weight="1"
-            android:layout_marginHorizontal="4dp"
-            android:background="@drawable/bg_urlbar"
-            android:paddingHorizontal="14dp"
-            android:hint="@string/search_or_url"
-            android:imeOptions="actionGo"
-            android:inputType="textUri"
-            android:maxLines="1"
-            android:selectAllOnFocus="true"
-            android:textSize="14sp"
-            android:autofillHints="" />
-
-        <!-- Download button with a count badge -->
-        <FrameLayout
-            android:layout_width="48dp"
-            android:layout_height="48dp">
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/tabStrip"
+                android:layout_width="0dp"
+                android:layout_height="40dp"
+                android:layout_weight="1"
+                android:overScrollMode="never"
+                android:scrollbars="none" />
 
             <ImageButton
-                android:id="@+id/btnDownloads"
+                android:id="@+id/btnNewTabStrip"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/menu_new_tab"
+                android:src="@drawable/ic_add" />
+        </LinearLayout>
+
+        <!-- Toolbar: back + address bar (with bookmark star) + menu -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:background="?attr/colorSurface"
+            android:paddingHorizontal="4dp"
+            android:paddingVertical="6dp">
+
+            <ImageButton
+                android:id="@+id/btnBack"
                 android:layout_width="44dp"
                 android:layout_height="44dp"
-                android:layout_gravity="center"
                 android:background="?attr/selectableItemBackgroundBorderless"
-                android:contentDescription="@string/downloads"
-                android:src="@drawable/ic_download" />
+                android:contentDescription="@string/back"
+                android:src="@drawable/ic_back" />
 
-            <TextView
-                android:id="@+id/downloadBadge"
-                android:layout_width="18dp"
-                android:layout_height="18dp"
-                android:layout_gravity="top|end"
-                android:background="@drawable/bg_badge"
-                android:gravity="center"
-                android:textColor="#FFFFFF"
-                android:textSize="10sp"
-                android:textStyle="bold"
+            <FrameLayout
+                android:layout_width="0dp"
+                android:layout_height="44dp"
+                android:layout_weight="1"
+                android:layout_marginHorizontal="4dp">
+
+                <EditText
+                    android:id="@+id/urlBar"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="@drawable/bg_urlbar"
+                    android:paddingStart="14dp"
+                    android:paddingEnd="44dp"
+                    android:hint="@string/search_or_url"
+                    android:imeOptions="actionGo"
+                    android:inputType="textUri"
+                    android:maxLines="1"
+                    android:selectAllOnFocus="true"
+                    android:textSize="14sp"
+                    android:autofillHints="" />
+
+                <ImageButton
+                    android:id="@+id/btnBookmark"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:layout_gravity="center_vertical|end"
+                    android:layout_marginEnd="2dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="@string/menu_bookmark_add"
+                    android:src="@drawable/ic_star_border" />
+            </FrameLayout>
+
+            <!-- Tab-count button hidden on large screens; the top strip is used instead. -->
+            <FrameLayout
+                android:id="@+id/btnTabs"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:clickable="true"
+                android:focusable="true"
                 android:visibility="gone"
-                tools:ignore="SmallSp" />
-        </FrameLayout>
+                android:contentDescription="@string/tabs">
 
-        <!-- Tab-count button hidden on large screens; the top strip is used instead.
-             Kept (GONE) so ViewBinding ids stay consistent across layouts. -->
-        <FrameLayout
-            android:id="@+id/btnTabs"
-            android:layout_width="44dp"
-            android:layout_height="44dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:clickable="true"
-            android:focusable="true"
-            android:visibility="gone"
-            android:contentDescription="@string/tabs">
+                <TextView
+                    android:id="@+id/tabCount"
+                    android:layout_width="22dp"
+                    android:layout_height="22dp"
+                    android:layout_gravity="center"
+                    android:background="@drawable/bg_tab_count"
+                    android:gravity="center"
+                    android:text="1"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    tools:ignore="HardcodedText" />
+            </FrameLayout>
 
-            <TextView
-                android:id="@+id/tabCount"
-                android:layout_width="22dp"
-                android:layout_height="22dp"
-                android:layout_gravity="center"
-                android:background="@drawable/bg_tab_count"
-                android:gravity="center"
-                android:text="1"
-                android:textSize="12sp"
-                android:textStyle="bold"
-                tools:ignore="HardcodedText" />
-        </FrameLayout>
+            <ImageButton
+                android:id="@+id/btnMenu"
+                android:layout_width="40dp"
+                android:layout_height="44dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/menu"
+                android:src="@drawable/ic_more" />
+        </LinearLayout>
 
-        <ImageButton
-            android:id="@+id/btnMenu"
-            android:layout_width="40dp"
-            android:layout_height="44dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="@string/menu"
-            android:src="@drawable/ic_more" />
+        <ProgressBar
+            android:id="@+id/progressBar"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="match_parent"
+            android:layout_height="3dp"
+            android:max="100"
+            android:progress="0"
+            android:visibility="gone" />
+
+        <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+            android:id="@+id/swipeRefresh"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1">
+
+            <FrameLayout
+                android:id="@+id/webContainer"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
+        </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
     </LinearLayout>
 
-    <ProgressBar
-        android:id="@+id/progressBar"
-        style="?android:attr/progressBarStyleHorizontal"
-        android:layout_width="match_parent"
-        android:layout_height="3dp"
-        android:max="100"
-        android:progress="0"
-        android:visibility="gone" />
+    <!-- Draggable floating download button with a count badge -->
+    <FrameLayout
+        android:id="@+id/dlFab"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_margin="16dp">
 
-    <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
-        android:id="@+id/swipeRefresh"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1">
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/btnDownloads"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_margin="6dp"
+            android:contentDescription="@string/downloads"
+            app:srcCompat="@drawable/ic_download"
+            app:tint="@android:color/white" />
 
-        <FrameLayout
-            android:id="@+id/webContainer"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent" />
-    </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
-</LinearLayout>
+        <TextView
+            android:id="@+id/downloadBadge"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:layout_gravity="top|end"
+            android:background="@drawable/bg_badge"
+            android:gravity="center"
+            android:textColor="#FFFFFF"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:visibility="gone"
+            tools:ignore="SmallSp" />
+    </FrameLayout>
+</FrameLayout>

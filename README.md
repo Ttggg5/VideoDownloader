@@ -18,12 +18,11 @@ and lets you download them with one tap.
      (`.mp4`, `.webm`, `.m3u8`, `.mpd`, `videoplayback`, …) is captured.
   2. **DOM scanning**: after each page loads, injected JavaScript reports the
      `src` of every `<video>` and `<source>` element back to the app.
-- **One-tap downloads** — a badge on the download button shows how many videos
-  were found. Tapping it opens a sheet that lists each video **with its file
-  size** (resolved via a HEAD / ranged-GET request carrying the page's
-  credentials); pick one and it downloads with the page's cookies, `Referer`,
-  and user-agent so authenticated/gated media still works. Files land in the
-  device's **Downloads** folder.
+- **One-tap downloads** — a **draggable floating button** (bottom-right, movable
+  anywhere) with a count badge opens a sheet that lists each video **with a
+  thumbnail preview and file size**; pick one and it downloads with the page's
+  cookies, `Referer`, and user-agent so authenticated/gated media still works.
+  Files land in the device's **Downloads** folder.
 - **Fast multi-connection downloads** — a custom engine splits each file into up
   to 6 byte-range segments fetched **in parallel** (when the server supports
   HTTP ranges) and writes them into one file via positional channel writes,
@@ -44,8 +43,9 @@ and lets you download them with one tap.
   comprehensive blocklist (thousands of domains) is downloaded on-device on
   first run, cached, and refreshed weekly. Matching covers a host and all its
   parent domains. Toggle it from the overflow menu; the choice is remembered.
-- **Bookmarks** — bookmark the current page from the overflow menu and reopen
-  saved pages from the bookmarks sheet; stored persistently on the device.
+- **Bookmarks** — a star icon in the address bar toggles a bookmark for the
+  current page (filled when saved); reopen saved pages from the bookmarks sheet
+  (overflow menu). Stored persistently on the device.
 - Handles page-initiated downloads via `WebView.setDownloadListener` too.
 
 ## Project layout
