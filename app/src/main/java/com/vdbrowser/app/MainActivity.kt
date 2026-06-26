@@ -59,6 +59,7 @@ class MainActivity : AppCompatActivity() {
 
         adBlockEnabled = getSharedPreferences("settings", MODE_PRIVATE)
             .getBoolean("adblock", true)
+        AdBlocker.init(applicationContext)
 
         requestNotificationPermissionIfNeeded()
         setupUi()

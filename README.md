@@ -39,9 +39,11 @@ and lets you download them with one tap.
   per segment (each resumes from where it stopped) for range-capable servers.
 - **Download history** — overflow → *Download history* lists finished downloads
   (state, size, time) persistently across restarts, with a Clear action.
-- **Ad/tracker blocker** — requests to a curated list of ad and analytics hosts
-  are dropped in `shouldInterceptRequest`. Toggle it from the overflow menu;
-  the choice is remembered.
+- **Ad/tracker blocker** — requests to known ad/tracker hosts are dropped in
+  `shouldInterceptRequest`. A small built-in list works immediately; a
+  comprehensive blocklist (thousands of domains) is downloaded on-device on
+  first run, cached, and refreshed weekly. Matching covers a host and all its
+  parent domains. Toggle it from the overflow menu; the choice is remembered.
 - **Bookmarks** — bookmark the current page from the overflow menu and reopen
   saved pages from the bookmarks sheet; stored persistently on the device.
 - Handles page-initiated downloads via `WebView.setDownloadListener` too.
