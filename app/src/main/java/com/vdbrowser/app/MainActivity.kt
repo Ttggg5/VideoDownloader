@@ -152,20 +152,22 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showLinkMenu(url: String) {
-        val options = arrayOf(getString(R.string.open_in_new_tab), getString(R.string.copy_link))
-        AlertDialog.Builder(this)
-            .setTitle(url)
-            .setItems(options) { _, which ->
-                when (which) {
-                    0 -> openInBackgroundTab(url)
-                    1 -> {
-                        val clip = getSystemService(CLIPBOARD_SERVICE) as ClipboardManager
-                        clip.setPrimaryClip(ClipData.newPlainText("url", url))
-                        Toast.makeText(this, R.string.link_copied, Toast.LENGTH_SHORT).show()
-                    }
-                }
-            }
-            .show()
+        val sheet = BottomSheetDialog(this)
+        val content = layoutInflater.inflate(R.layout.sheet_link, null)
+        sheet.setContentView(content)
+
+        content.findViewById<TextView>(R.id.linkUrl).text = url
+        content.findViewById<View>(R.id.linkOpenNewTab).setOnClickListener {
+            openInBackgroundTab(url)
+            sheet.dismiss()
+        }
+        content.findViewById<View>(R.id.linkCopy).setOnClickListener {
+            val clip = getSystemService(CLIPBOARD_SERVICE) as ClipboardManager
+            clip.setPrimaryClip(ClipData.newPlainText("url", url))
+            Toast.makeText(this, R.string.link_copied, Toast.LENGTH_SHORT).show()
+            sheet.dismiss()
+        }
+        sheet.show()
     }
 
     /** Refresh the on-top tab strip (e.g. after a title or URL changes). */
