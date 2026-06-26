@@ -13,6 +13,11 @@ android {
         targetSdk = 34
         versionCode = 1
         versionName = "1.0"
+
+        // FFmpeg native libs are large; ship only the ABIs real phones use.
+        ndk {
+            abiFilters += listOf("arm64-v8a", "armeabi-v7a")
+        }
     }
 
     buildTypes {
@@ -48,4 +53,7 @@ dependencies {
     implementation("androidx.constraintlayout:constraintlayout:2.1.4")
     implementation("androidx.recyclerview:recyclerview:1.3.2")
     implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
+    // Maintained fork of the retired FFmpegKit; "https" build = network + HLS
+    // demux + mp4 mux, enough to remux HLS/DASH to a real .mp4 by stream copy.
+    implementation("com.antonkarpenko:ffmpeg-kit-https:2.1.0")
 }

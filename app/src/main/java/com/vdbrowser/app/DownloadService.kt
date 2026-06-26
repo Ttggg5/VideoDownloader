@@ -42,13 +42,18 @@ class DownloadService : Service() {
             referer = intent.getStringExtra(EX_REFERER)
         )
 
+        val isStream = intent.getBooleanExtra(EX_STREAM, false)
         val item = Downloads.create(job.fileName, -1)
         active.incrementAndGet()
         startForeground(NOTIF_ID, buildNotification())
         ensureUpdater()
 
         pool.execute {
-            DownloadEngine.download(applicationContext, job, item)
+            if (isStream) {
+                HlsMerger.merge(applicationContext, job, item)
+            } else {
+                DownloadEngine.download(applicationContext, job, item)
+            }
             if (active.decrementAndGet() <= 0) handler.post { finishIfIdle() }
         }
         return START_NOT_STICKY
@@ -155,6 +160,7 @@ class DownloadService : Service() {
         const val EX_COOKIE = "cookie"
         const val EX_UA = "ua"
         const val EX_REFERER = "referer"
+        const val EX_STREAM = "stream"
 
         private const val CHANNEL_ID = "downloads"
         private const val NOTIF_ID = 1001

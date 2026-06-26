@@ -29,6 +29,10 @@ and lets you download them with one tap.
   HTTP ranges) and writes them into one file via positional channel writes,
   which is typically much faster than a single stream. It runs in a foreground
   service so downloads continue in the background, with a progress notification.
+- **HLS/DASH → MP4** — adaptive streams (`.m3u8` / `.mpd`) are remuxed into a
+  single `.mp4` with a bundled FFmpeg (the maintained `ffmpeg-kit-https` fork).
+  FFmpeg fetches the playlist and segments itself (decrypting AES-128 when
+  keyed) and copies streams without re-encoding, so it's fast and lossless.
 - **Download progress dialog** — the overflow (⋮) menu → *Downloads in progress*
   shows every download this session with a live progress bar, **transfer speed**,
   and byte counter.
