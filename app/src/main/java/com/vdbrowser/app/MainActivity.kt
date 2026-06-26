@@ -2,6 +2,8 @@ package com.vdbrowser.app
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -53,6 +55,13 @@ class MainActivity : AppCompatActivity() {
 
     private var adBlockEnabled = true
     private var tabStripAdapter: TabStripAdapter? = null
+
+    /** Receives the resolved href from a long-pressed link. */
+    private val linkHandler = Handler(Looper.getMainLooper()) { msg ->
+        val url = msg.data?.getString("url")
+        if (!url.isNullOrBlank()) showLinkMenu(url)
+        true
+    }
 
     private val homeUrl = "https://www.google.com"
 
@@ -133,6 +142,30 @@ class MainActivity : AppCompatActivity() {
         binding.tabCount.text = tabs.size.toString()
         tabStripAdapter?.notifyDataSetChanged()
         binding.tabStrip?.let { strip -> strip.post { strip.scrollToPosition(currentIndex) } }
+    }
+
+    /** Open a URL in a new tab without leaving the current one. */
+    private fun openInBackgroundTab(url: String) {
+        tabs.add(createTab(url))
+        updateTabCount()
+        Toast.makeText(this, R.string.opened_in_new_tab, Toast.LENGTH_SHORT).show()
+    }
+
+    private fun showLinkMenu(url: String) {
+        val options = arrayOf(getString(R.string.open_in_new_tab), getString(R.string.copy_link))
+        AlertDialog.Builder(this)
+            .setTitle(url)
+            .setItems(options) { _, which ->
+                when (which) {
+                    0 -> openInBackgroundTab(url)
+                    1 -> {
+                        val clip = getSystemService(CLIPBOARD_SERVICE) as ClipboardManager
+                        clip.setPrimaryClip(ClipData.newPlainText("url", url))
+                        Toast.makeText(this, R.string.link_copied, Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
+            .show()
     }
 
     /** Refresh the on-top tab strip (e.g. after a title or URL changes). */
@@ -239,6 +272,19 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+        // Long-press a link to open it in a new tab or copy it.
+        web.setOnLongClickListener {
+            val type = web.hitTestResult.type
+            if (type == WebView.HitTestResult.SRC_ANCHOR_TYPE ||
+                type == WebView.HitTestResult.SRC_IMAGE_ANCHOR_TYPE
+            ) {
+                web.requestFocusNodeHref(linkHandler.obtainMessage())
+                true
+            } else {
+                false
+            }
+        }
+
         web.setDownloadListener { dlUrl, userAgent, contentDisposition, mimeType, _ ->
             val name = URLUtil.guessFileName(dlUrl, contentDisposition, mimeType)
             val type = name.substringAfterLast('.', "bin")
@@ -262,6 +308,9 @@ class MainActivity : AppCompatActivity() {
         }
         binding.btnBack.setOnClickListener {
             if (currentTab.webView.canGoBack()) currentTab.webView.goBack()
+        }
+        binding.btnForward.setOnClickListener {
+            if (currentTab.webView.canGoForward()) currentTab.webView.goForward()
         }
         binding.btnBookmark.setOnClickListener {
             toggleBookmark()
@@ -538,8 +587,6 @@ class MainActivity : AppCompatActivity() {
     private fun showOverflowMenu() {
         val popup = PopupMenu(this, binding.btnMenu)
         popup.menu.add(0, MENU_NEW_TAB, 0, R.string.menu_new_tab)
-        popup.menu.add(0, MENU_FORWARD, 1, R.string.menu_forward).isEnabled =
-            currentTab.webView.canGoForward()
         popup.menu.add(0, MENU_REFRESH, 2, R.string.menu_refresh)
         popup.menu.add(0, MENU_BOOKMARKS, 3, R.string.bookmarks)
         popup.menu.add(0, MENU_DOWNLOADS, 4, R.string.menu_downloads)
@@ -552,7 +599,6 @@ class MainActivity : AppCompatActivity() {
         popup.setOnMenuItemClickListener { item ->
             when (item.itemId) {
                 MENU_NEW_TAB -> { addTabAndSelect(createTab(homeUrl)); true }
-                MENU_FORWARD -> { if (currentTab.webView.canGoForward()) currentTab.webView.goForward(); true }
                 MENU_REFRESH -> { currentTab.webView.reload(); true }
                 MENU_BOOKMARKS -> { showBookmarks(); true }
                 MENU_DOWNLOADS -> { showDownloadsDialog(); true }
@@ -713,6 +759,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun updateNavButtons() {
         binding.btnBack.alpha = if (currentTab.webView.canGoBack()) 1f else 0.4f
+        binding.btnForward.alpha = if (currentTab.webView.canGoForward()) 1f else 0.4f
     }
 
     private fun requestNotificationPermissionIfNeeded() {
@@ -756,7 +803,6 @@ class MainActivity : AppCompatActivity() {
 
     companion object {
         private const val MENU_NEW_TAB = 1
-        private const val MENU_FORWARD = 2
         private const val MENU_REFRESH = 3
         private const val MENU_BOOKMARKS = 5
         private const val MENU_DOWNLOADS = 6
