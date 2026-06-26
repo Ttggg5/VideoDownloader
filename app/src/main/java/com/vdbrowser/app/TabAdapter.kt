@@ -5,6 +5,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageButton
+import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 
@@ -17,6 +18,7 @@ class TabAdapter(
 ) : RecyclerView.Adapter<TabAdapter.VH>() {
 
     class VH(view: View) : RecyclerView.ViewHolder(view) {
+        val favicon: ImageView = view.findViewById(R.id.tabFavicon)
         val title: TextView = view.findViewById(R.id.tabTitle)
         val url: TextView = view.findViewById(R.id.tabUrl)
         val close: ImageButton = view.findViewById(R.id.tabClose)
@@ -32,6 +34,9 @@ class TabAdapter(
         val tab = tabs[position]
         holder.title.text = tab.title.ifBlank { "New Tab" }
         holder.url.text = tab.url.ifBlank { "about:blank" }
+        val fav = tab.favicon
+        if (fav != null) holder.favicon.setImageBitmap(fav)
+        else holder.favicon.setImageResource(R.drawable.ic_public)
         holder.itemView.setBackgroundColor(
             if (position == currentIndex()) 0x223F51B5 else Color.TRANSPARENT
         )

@@ -10,4 +10,5 @@ class Tab(val webView: WebView) {
     val sniffer = MediaSniffer()
     var title: String = "New Tab"
     var url: String = ""
+    var favicon: android.graphics.Bitmap? = null
 }

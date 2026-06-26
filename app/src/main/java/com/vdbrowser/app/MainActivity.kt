@@ -11,11 +11,13 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.os.Message
+import android.view.Gravity
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
+import android.widget.PopupWindow
 import android.webkit.CookieManager
 import android.webkit.JavascriptInterface
 import android.webkit.URLUtil
@@ -32,6 +34,7 @@ import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.bottomsheet.BottomSheetDialog
@@ -160,6 +163,7 @@ class MainActivity : AppCompatActivity() {
                 super.onPageStarted(view, url, favicon)
                 tab.sniffer.clear()
                 tab.url = url ?: ""
+                tab.favicon = null
                 if (tab === currentTab) {
                     if (!binding.urlBar.hasFocus()) binding.urlBar.setText(url)
                     updateBadge()
@@ -205,6 +209,13 @@ class MainActivity : AppCompatActivity() {
             override fun onReceivedTitle(view: WebView?, title: String?) {
                 if (!title.isNullOrBlank()) {
                     tab.title = title
+                    refreshTabStrip()
+                }
+            }
+
+            override fun onReceivedIcon(view: WebView?, icon: Bitmap?) {
+                if (icon != null) {
+                    tab.favicon = icon
                     refreshTabStrip()
                 }
             }
@@ -379,11 +390,20 @@ class MainActivity : AppCompatActivity() {
         view?.evaluateJavascript(js, null)
     }
 
+    /** Shows detected media as a popup anchored above the floating download button. */
     private fun showMediaSheet() {
         val items = currentTab.sniffer.snapshot()
-        val sheet = BottomSheetDialog(this)
         val content = layoutInflater.inflate(R.layout.sheet_downloads, null)
-        sheet.setContentView(content)
+        val widthPx = minOf(resources.displayMetrics.widthPixels - dp(24), dp(360))
+
+        val popup = PopupWindow(this).apply {
+            this.width = widthPx
+            isFocusable = true
+            isOutsideTouchable = true
+            elevation = dp(12).toFloat()
+            setBackgroundDrawable(ContextCompat.getDrawable(this@MainActivity, R.drawable.bg_popup))
+            contentView = content
+        }
 
         val recycler = content.findViewById<RecyclerView>(R.id.mediaList)
         val empty = content.findViewById<TextView>(R.id.emptyView)
@@ -407,7 +427,7 @@ class MainActivity : AppCompatActivity() {
                         Toast.makeText(this, R.string.stream_note, Toast.LENGTH_LONG).show()
                     }
                     DownloadHelper.enqueue(this, item, pageUrl, ua)
-                    sheet.dismiss()
+                    popup.dismiss()
                 },
                 onNeedThumb = { item ->
                     ThumbnailLoader.load(item.url, pageUrl, ua) { bmp ->
@@ -430,8 +450,24 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
-        sheet.show()
+
+        // Bound the height so long lists scroll, then place it above the FAB.
+        val maxH = (resources.displayMetrics.heightPixels * 0.6f).toInt()
+        content.measure(
+            View.MeasureSpec.makeMeasureSpec(widthPx, View.MeasureSpec.EXACTLY),
+            View.MeasureSpec.makeMeasureSpec(maxH, View.MeasureSpec.AT_MOST)
+        )
+        popup.height = content.measuredHeight
+
+        val loc = IntArray(2)
+        binding.dlFab.getLocationInWindow(loc)
+        val margin = dp(8)
+        val x = (loc[0] + binding.dlFab.width - widthPx).coerceAtLeast(margin)
+        val y = (loc[1] - popup.height - margin).coerceAtLeast(margin)
+        popup.showAtLocation(binding.root, Gravity.NO_GRAVITY, x, y)
     }
+
+    private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
 
     private fun showTabSwitcher() {
         val sheet = BottomSheetDialog(this)

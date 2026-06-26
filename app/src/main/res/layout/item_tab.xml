@@ -9,6 +9,14 @@
     android:paddingEnd="8dp"
     android:paddingVertical="12dp">
 
+    <ImageView
+        android:id="@+id/tabFavicon"
+        android:layout_width="20dp"
+        android:layout_height="20dp"
+        android:layout_marginEnd="14dp"
+        android:contentDescription="@string/tabs"
+        android:src="@drawable/ic_public" />
+
     <LinearLayout
         android:layout_width="0dp"
         android:layout_height="wrap_content"

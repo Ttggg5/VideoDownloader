@@ -155,7 +155,6 @@
             android:id="@+id/btnDownloads"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_margin="6dp"
             android:contentDescription="@string/downloads"
             app:srcCompat="@drawable/ic_download"
             app:tint="@android:color/white" />
@@ -166,6 +165,7 @@
             android:layout_height="20dp"
             android:layout_gravity="top|end"
             android:background="@drawable/bg_badge"
+            android:elevation="16dp"
             android:gravity="center"
             android:textColor="#FFFFFF"
             android:textSize="11sp"

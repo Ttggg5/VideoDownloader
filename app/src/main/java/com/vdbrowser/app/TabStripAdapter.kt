@@ -5,6 +5,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageButton
+import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 
@@ -20,6 +21,7 @@ class TabStripAdapter(
 ) : RecyclerView.Adapter<TabStripAdapter.VH>() {
 
     class VH(view: View) : RecyclerView.ViewHolder(view) {
+        val favicon: ImageView = view.findViewById(R.id.tabChipFavicon)
         val title: TextView = view.findViewById(R.id.tabChipTitle)
         val close: ImageButton = view.findViewById(R.id.tabChipClose)
     }
@@ -33,6 +35,9 @@ class TabStripAdapter(
     override fun onBindViewHolder(holder: VH, position: Int) {
         val tab = tabs[position]
         holder.title.text = tab.title.ifBlank { tab.url.ifBlank { "New Tab" } }
+        val fav = tab.favicon
+        if (fav != null) holder.favicon.setImageBitmap(fav)
+        else holder.favicon.setImageResource(R.drawable.ic_public)
 
         val active = position == currentIndex()
         holder.itemView.setBackgroundResource(
