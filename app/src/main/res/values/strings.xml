@@ -39,5 +39,6 @@
     <string name="no_history">No downloads yet.</string>
     <string name="clear">Clear</string>
     <string name="pause">Pause</string>
+    <string name="resume">Resume</string>
     <string name="cancel">Cancel</string>
 </resources>

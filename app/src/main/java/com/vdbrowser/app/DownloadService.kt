@@ -32,6 +32,31 @@ class DownloadService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        // Notification action buttons route back here as control commands.
+        when (intent?.action) {
+            ACTION_PAUSE -> {
+                Downloads.snapshot()
+                    .filter { it.state == Downloads.State.RUNNING && it.resumable }
+                    .forEach { Downloads.pause(it.id) }
+                notify(buildNotification())
+                return START_NOT_STICKY
+            }
+            ACTION_RESUME -> {
+                Downloads.snapshot()
+                    .filter { it.state == Downloads.State.PAUSED }
+                    .forEach { Downloads.resume(it.id) }
+                notify(buildNotification())
+                return START_NOT_STICKY
+            }
+            ACTION_CANCEL -> {
+                Downloads.snapshot()
+                    .filter { it.state == Downloads.State.RUNNING || it.state == Downloads.State.PAUSED }
+                    .forEach { Downloads.cancel(it.id) }
+                notify(buildNotification())
+                return START_NOT_STICKY
+            }
+        }
+
         val url = intent?.getStringExtra(EX_URL) ?: return START_NOT_STICKY
         val job = DownloadEngine.Job(
             url = url,
@@ -107,7 +132,29 @@ class DownloadService : Service() {
         } else {
             builder.setProgress(0, 0, true)
         }
+
+        // Control buttons: pause (if a resumable download is running), else resume.
+        val snaps = Downloads.snapshot()
+        val anyResumableRunning = snaps.any { it.state == Downloads.State.RUNNING && it.resumable }
+        val anyPaused = snaps.any { it.state == Downloads.State.PAUSED }
+        when {
+            anyResumableRunning -> builder.addAction(
+                R.drawable.ic_pause, getString(R.string.pause), action(ACTION_PAUSE)
+            )
+            anyPaused -> builder.addAction(
+                R.drawable.ic_play, getString(R.string.resume), action(ACTION_RESUME)
+            )
+        }
+        builder.addAction(R.drawable.ic_close, getString(R.string.cancel), action(ACTION_CANCEL))
         return builder.build()
+    }
+
+    private fun action(name: String): android.app.PendingIntent {
+        val intent = Intent(this, DownloadService::class.java).setAction(name)
+        return android.app.PendingIntent.getService(
+            this, name.hashCode(), intent,
+            android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE
+        )
     }
 
     private fun buildFinalNotification(): android.app.Notification {
@@ -164,6 +211,10 @@ class DownloadService : Service() {
         const val EX_UA = "ua"
         const val EX_REFERER = "referer"
         const val EX_STREAM = "stream"
+
+        const val ACTION_PAUSE = "com.vdbrowser.app.PAUSE"
+        const val ACTION_RESUME = "com.vdbrowser.app.RESUME"
+        const val ACTION_CANCEL = "com.vdbrowser.app.CANCEL"
 
         private const val CHANNEL_ID = "downloads"
         private const val NOTIF_ID = 1001
