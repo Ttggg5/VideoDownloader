@@ -459,7 +459,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         val recycler = content.findViewById<RecyclerView>(R.id.mediaList)
-        val empty = content.findViewById<TextView>(R.id.emptyView)
+        val empty = content.findViewById<View>(R.id.emptyView)
         val header = content.findViewById<TextView>(R.id.sheetTitle)
         header.text = getString(R.string.detected_media, items.size)
 
@@ -586,25 +586,18 @@ class MainActivity : AppCompatActivity() {
 
     private fun showOverflowMenu() {
         val popup = PopupMenu(this, binding.btnMenu)
-        popup.menu.add(0, MENU_NEW_TAB, 0, R.string.menu_new_tab)
-        popup.menu.add(0, MENU_REFRESH, 2, R.string.menu_refresh)
-        popup.menu.add(0, MENU_BOOKMARKS, 3, R.string.bookmarks)
-        popup.menu.add(0, MENU_DOWNLOADS, 4, R.string.menu_downloads)
-        popup.menu.add(0, MENU_HISTORY, 5, R.string.menu_history)
-        popup.menu.add(0, MENU_LANGUAGE, 6, R.string.menu_language)
-        popup.menu.add(0, MENU_ADBLOCK, 7, getString(R.string.menu_adblock)).apply {
-            isCheckable = true
-            isChecked = adBlockEnabled
-        }
+        popup.menuInflater.inflate(R.menu.overflow_menu, popup.menu)
+        popup.menu.findItem(R.id.menu_adblock)?.isChecked = adBlockEnabled
+        forceMenuIcons(popup)
         popup.setOnMenuItemClickListener { item ->
             when (item.itemId) {
-                MENU_NEW_TAB -> { addTabAndSelect(createTab(homeUrl)); true }
-                MENU_REFRESH -> { currentTab.webView.reload(); true }
-                MENU_BOOKMARKS -> { showBookmarks(); true }
-                MENU_DOWNLOADS -> { showDownloadsDialog(); true }
-                MENU_HISTORY -> { showHistory(); true }
-                MENU_LANGUAGE -> { showLanguageDialog(); true }
-                MENU_ADBLOCK -> { toggleAdBlock(); true }
+                R.id.menu_new_tab -> { addTabAndSelect(createTab(homeUrl)); true }
+                R.id.menu_refresh -> { currentTab.webView.reload(); true }
+                R.id.menu_bookmarks -> { showBookmarks(); true }
+                R.id.menu_downloads -> { showDownloadsDialog(); true }
+                R.id.menu_history -> { showHistory(); true }
+                R.id.menu_language -> { showLanguageDialog(); true }
+                R.id.menu_adblock -> { toggleAdBlock(); true }
                 else -> false
             }
         }
@@ -629,7 +622,7 @@ class MainActivity : AppCompatActivity() {
         sheet.setContentView(content)
 
         val recycler = content.findViewById<RecyclerView>(R.id.bookmarksList)
-        val empty = content.findViewById<TextView>(R.id.bookmarksEmpty)
+        val empty = content.findViewById<View>(R.id.bookmarksEmpty)
         val items = Bookmarks.all(this)
 
         if (items.isEmpty()) {
@@ -646,6 +639,18 @@ class MainActivity : AppCompatActivity() {
             )
         }
         sheet.show()
+    }
+
+    /** Force a PopupMenu to render item icons (hidden by default). */
+    private fun forceMenuIcons(popup: PopupMenu) {
+        runCatching {
+            val field = popup.javaClass.getDeclaredField("mPopup")
+            field.isAccessible = true
+            val helper = field.get(popup)
+            helper.javaClass
+                .getDeclaredMethod("setForceShowIcon", Boolean::class.javaPrimitiveType)
+                .invoke(helper, true)
+        }
     }
 
     private fun showLanguageDialog() {
@@ -695,7 +700,7 @@ class MainActivity : AppCompatActivity() {
         sheet.setContentView(content)
 
         val recycler = content.findViewById<RecyclerView>(R.id.downloadsList)
-        val empty = content.findViewById<TextView>(R.id.downloadsEmpty)
+        val empty = content.findViewById<View>(R.id.downloadsEmpty)
         recycler.layoutManager = LinearLayoutManager(this)
         val adapter = DownloadProgressAdapter(
             emptyList(),
@@ -726,7 +731,7 @@ class MainActivity : AppCompatActivity() {
         sheet.setContentView(content)
 
         val recycler = content.findViewById<RecyclerView>(R.id.historyList)
-        val empty = content.findViewById<TextView>(R.id.historyEmpty)
+        val empty = content.findViewById<View>(R.id.historyEmpty)
         val clear = content.findViewById<View>(R.id.btnClearHistory)
         val items = DownloadHistory.all(this)
 
@@ -799,15 +804,5 @@ class MainActivity : AppCompatActivity() {
             tab.sniffer.consider(url)
             if (tab === currentTab) runOnUiThread { updateBadge() }
         }
-    }
-
-    companion object {
-        private const val MENU_NEW_TAB = 1
-        private const val MENU_REFRESH = 3
-        private const val MENU_BOOKMARKS = 5
-        private const val MENU_DOWNLOADS = 6
-        private const val MENU_HISTORY = 7
-        private const val MENU_ADBLOCK = 8
-        private const val MENU_LANGUAGE = 9
     }
 }

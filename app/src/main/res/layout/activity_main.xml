@@ -138,6 +138,7 @@
             android:layout_marginTop="8dp"
             android:layout_marginEnd="8dp"
             android:contentDescription="@string/downloads"
+            app:backgroundTint="@color/brand_primary"
             app:fabCustomSize="68dp"
             app:maxImageSize="34dp"
             app:shapeAppearanceOverlay="@style/ShapeAppearanceOverlay.Fab.Circle"
