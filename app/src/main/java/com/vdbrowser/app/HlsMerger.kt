@@ -9,11 +9,10 @@ import android.os.Environment
 import android.provider.MediaStore
 import com.antonkarpenko.ffmpegkit.FFmpegKit
 import com.antonkarpenko.ffmpegkit.FFmpegKitConfig
-import com.antonkarpenko.ffmpegkit.FFmpegSession
 import com.antonkarpenko.ffmpegkit.ReturnCode
 import java.io.File
 import java.util.concurrent.CountDownLatch
-import java.util.concurrent.atomic.AtomicReference
+import java.util.concurrent.TimeUnit
 
 /**
  * Merges an adaptive stream (HLS .m3u8 / DASH .mpd) into a single .mp4 using
@@ -72,7 +71,11 @@ object HlsMerger {
                 }
             }
 
-            item.state = if (ok) Downloads.State.COMPLETED else Downloads.State.FAILED
+            item.state = when {
+                ok -> Downloads.State.COMPLETED
+                item.cancelled -> Downloads.State.CANCELED
+                else -> Downloads.State.FAILED
+            }
             return ok
         } catch (e: Exception) {
             uri?.let { runCatching { context.contentResolver.delete(it, null, null) } }
@@ -106,15 +109,21 @@ object HlsMerger {
 
     private fun runFfmpeg(args: Array<String>, item: Downloads.Item): Boolean {
         val latch = CountDownLatch(1)
-        val sessionRef = AtomicReference<FFmpegSession>()
-        FFmpegKit.executeWithArgumentsAsync(
+        val session = FFmpegKit.executeWithArgumentsAsync(
             args,
-            { session -> sessionRef.set(session); latch.countDown() },
-            { /* log */ },
+            { _ -> latch.countDown() },
+            { _ -> /* log */ },
             { stats -> item.downloaded.set(stats.size) }  // output bytes so far
         )
-        latch.await()
-        val returnCode = sessionRef.get()?.returnCode
+        // Watch for cancellation and stop the FFmpeg session if requested.
+        var cancelRequested = false
+        while (!latch.await(200, TimeUnit.MILLISECONDS)) {
+            if (item.cancelled && !cancelRequested) {
+                cancelRequested = true
+                FFmpegKit.cancel(session.sessionId)
+            }
+        }
+        val returnCode = session.returnCode
         return returnCode != null && ReturnCode.isSuccess(returnCode)
     }
 
