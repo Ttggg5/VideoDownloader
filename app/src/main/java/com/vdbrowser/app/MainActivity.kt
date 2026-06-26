@@ -400,8 +400,13 @@ class MainActivity : AppCompatActivity() {
         popup.menu.add(0, MENU_FORWARD, 1, R.string.menu_forward).isEnabled =
             currentTab.webView.canGoForward()
         popup.menu.add(0, MENU_REFRESH, 2, R.string.menu_refresh)
-        popup.menu.add(0, MENU_DOWNLOADS, 3, R.string.menu_downloads)
-        popup.menu.add(0, MENU_ADBLOCK, 4, getString(R.string.menu_adblock)).apply {
+        popup.menu.add(0, MENU_BOOKMARK_ADD, 3, getString(R.string.menu_bookmark_add)).apply {
+            isCheckable = true
+            isChecked = Bookmarks.isBookmarked(this@MainActivity, currentTab.url)
+        }
+        popup.menu.add(0, MENU_BOOKMARKS, 4, R.string.bookmarks)
+        popup.menu.add(0, MENU_DOWNLOADS, 5, R.string.menu_downloads)
+        popup.menu.add(0, MENU_ADBLOCK, 6, getString(R.string.menu_adblock)).apply {
             isCheckable = true
             isChecked = adBlockEnabled
         }
@@ -410,12 +415,51 @@ class MainActivity : AppCompatActivity() {
                 MENU_NEW_TAB -> { addTabAndSelect(createTab(homeUrl)); true }
                 MENU_FORWARD -> { if (currentTab.webView.canGoForward()) currentTab.webView.goForward(); true }
                 MENU_REFRESH -> { currentTab.webView.reload(); true }
+                MENU_BOOKMARK_ADD -> { toggleBookmark(); true }
+                MENU_BOOKMARKS -> { showBookmarks(); true }
                 MENU_DOWNLOADS -> { showDownloadsDialog(); true }
                 MENU_ADBLOCK -> { toggleAdBlock(); true }
                 else -> false
             }
         }
         popup.show()
+    }
+
+    private fun toggleBookmark() {
+        val url = currentTab.url
+        if (url.isBlank()) return
+        if (Bookmarks.isBookmarked(this, url)) {
+            Bookmarks.remove(this, url)
+            Toast.makeText(this, R.string.bookmark_removed, Toast.LENGTH_SHORT).show()
+        } else {
+            Bookmarks.add(this, currentTab.title, url)
+            Toast.makeText(this, R.string.bookmark_added, Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun showBookmarks() {
+        val sheet = BottomSheetDialog(this)
+        val content = layoutInflater.inflate(R.layout.sheet_bookmarks, null)
+        sheet.setContentView(content)
+
+        val recycler = content.findViewById<RecyclerView>(R.id.bookmarksList)
+        val empty = content.findViewById<TextView>(R.id.bookmarksEmpty)
+        val items = Bookmarks.all(this)
+
+        if (items.isEmpty()) {
+            recycler.visibility = View.GONE
+            empty.visibility = View.VISIBLE
+        } else {
+            recycler.visibility = View.VISIBLE
+            empty.visibility = View.GONE
+            recycler.layoutManager = LinearLayoutManager(this)
+            recycler.adapter = BookmarkAdapter(
+                items,
+                onOpen = { item -> currentTab.webView.loadUrl(item.url); sheet.dismiss() },
+                onDelete = { item -> Bookmarks.remove(this, item.url) }
+            )
+        }
+        sheet.show()
     }
 
     private fun toggleAdBlock() {
@@ -508,7 +552,9 @@ class MainActivity : AppCompatActivity() {
         private const val MENU_NEW_TAB = 1
         private const val MENU_FORWARD = 2
         private const val MENU_REFRESH = 3
-        private const val MENU_DOWNLOADS = 4
-        private const val MENU_ADBLOCK = 5
+        private const val MENU_BOOKMARK_ADD = 4
+        private const val MENU_BOOKMARKS = 5
+        private const val MENU_DOWNLOADS = 6
+        private const val MENU_ADBLOCK = 7
     }
 }

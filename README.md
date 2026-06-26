@@ -39,6 +39,8 @@ and lets you download them with one tap.
 - **Ad/tracker blocker** — requests to a curated list of ad and analytics hosts
   are dropped in `shouldInterceptRequest`. Toggle it from the overflow menu;
   the choice is remembered.
+- **Bookmarks** — bookmark the current page from the overflow menu and reopen
+  saved pages from the bookmarks sheet; stored persistently on the device.
 - Handles page-initiated downloads via `WebView.setDownloadListener` too.
 
 ## Project layout

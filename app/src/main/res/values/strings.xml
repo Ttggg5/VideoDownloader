@@ -29,4 +29,10 @@
     <string name="notif_downloading">Downloading %1$d file(s)</string>
     <string name="notif_done">Download complete</string>
     <string name="notif_done_some_failed">Downloads finished (%1$d failed)</string>
+    <string name="bookmarks">Bookmarks</string>
+    <string name="menu_bookmark_add">Bookmark this page</string>
+    <string name="no_bookmarks">No bookmarks yet.</string>
+    <string name="delete">Delete</string>
+    <string name="bookmark_added">Bookmarked</string>
+    <string name="bookmark_removed">Bookmark removed</string>
 </resources>
