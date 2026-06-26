@@ -33,8 +33,11 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.ContextCompat
+import androidx.core.os.LocaleListCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.bottomsheet.BottomSheetDialog
@@ -541,7 +544,8 @@ class MainActivity : AppCompatActivity() {
         popup.menu.add(0, MENU_BOOKMARKS, 3, R.string.bookmarks)
         popup.menu.add(0, MENU_DOWNLOADS, 4, R.string.menu_downloads)
         popup.menu.add(0, MENU_HISTORY, 5, R.string.menu_history)
-        popup.menu.add(0, MENU_ADBLOCK, 6, getString(R.string.menu_adblock)).apply {
+        popup.menu.add(0, MENU_LANGUAGE, 6, R.string.menu_language)
+        popup.menu.add(0, MENU_ADBLOCK, 7, getString(R.string.menu_adblock)).apply {
             isCheckable = true
             isChecked = adBlockEnabled
         }
@@ -553,6 +557,7 @@ class MainActivity : AppCompatActivity() {
                 MENU_BOOKMARKS -> { showBookmarks(); true }
                 MENU_DOWNLOADS -> { showDownloadsDialog(); true }
                 MENU_HISTORY -> { showHistory(); true }
+                MENU_LANGUAGE -> { showLanguageDialog(); true }
                 MENU_ADBLOCK -> { toggleAdBlock(); true }
                 else -> false
             }
@@ -595,6 +600,31 @@ class MainActivity : AppCompatActivity() {
             )
         }
         sheet.show()
+    }
+
+    private fun showLanguageDialog() {
+        val tags = arrayOf("", "en", "zh")
+        val labels = arrayOf(
+            getString(R.string.lang_system),
+            getString(R.string.lang_english),
+            getString(R.string.lang_chinese)
+        )
+        val current = AppCompatDelegate.getApplicationLocales()
+        val currentTag = if (current.isEmpty) "" else current[0]?.language ?: ""
+        val checked = tags.indexOf(currentTag).coerceAtLeast(0)
+
+        AlertDialog.Builder(this)
+            .setTitle(R.string.language_title)
+            .setSingleChoiceItems(labels, checked) { dialog, which ->
+                val tag = tags[which]
+                AppCompatDelegate.setApplicationLocales(
+                    if (tag.isEmpty()) LocaleListCompat.getEmptyLocaleList()
+                    else LocaleListCompat.forLanguageTags(tag)
+                )
+                dialog.dismiss()
+            }
+            .setNegativeButton(R.string.cancel, null)
+            .show()
     }
 
     private fun toggleAdBlock() {
@@ -725,5 +755,6 @@ class MainActivity : AppCompatActivity() {
         private const val MENU_DOWNLOADS = 6
         private const val MENU_HISTORY = 7
         private const val MENU_ADBLOCK = 8
+        private const val MENU_LANGUAGE = 9
     }
 }

@@ -41,4 +41,9 @@
     <string name="pause">Pause</string>
     <string name="resume">Resume</string>
     <string name="cancel">Cancel</string>
+    <string name="menu_language">Language</string>
+    <string name="language_title">Language</string>
+    <string name="lang_system">System default</string>
+    <string name="lang_english">English</string>
+    <string name="lang_chinese">中文</string>
 </resources>
