@@ -10,11 +10,12 @@
     android:paddingVertical="12dp">
 
     <ImageView
+        android:id="@+id/bookmarkFavicon"
         android:layout_width="24dp"
         android:layout_height="24dp"
         android:layout_marginEnd="16dp"
         android:contentDescription="@string/bookmarks"
-        android:src="@drawable/ic_star" />
+        android:src="@drawable/ic_public" />
 
     <LinearLayout
         android:layout_width="0dp"

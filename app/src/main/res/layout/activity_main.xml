@@ -130,6 +130,8 @@
             android:layout_marginTop="8dp"
             android:layout_marginEnd="8dp"
             android:contentDescription="@string/downloads"
+            app:fabCustomSize="68dp"
+            app:maxImageSize="34dp"
             app:shapeAppearanceOverlay="@style/ShapeAppearanceOverlay.Fab.Circle"
             app:srcCompat="@drawable/ic_download"
             app:tint="@android:color/white" />

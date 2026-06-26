@@ -400,7 +400,8 @@ class MainActivity : AppCompatActivity() {
             this.width = widthPx
             isFocusable = true
             isOutsideTouchable = true
-            elevation = dp(12).toFloat()
+            elevation = dp(20).toFloat()
+            animationStyle = android.R.style.Animation_Dialog
             setBackgroundDrawable(ContextCompat.getDrawable(this@MainActivity, R.drawable.bg_popup))
             contentView = content
         }
@@ -480,6 +481,22 @@ class MainActivity : AppCompatActivity() {
         val y = if (showAbove) fabLoc[1] - popup.height - margin
         else fabLoc[1] + fab.height + margin
         popup.showAtLocation(binding.root, Gravity.NO_GRAVITY, x, y)
+        dimBehind(popup)
+    }
+
+    /** Dims the screen behind a popup window to draw attention to it. */
+    private fun dimBehind(popup: PopupWindow) {
+        try {
+            var root: View = popup.contentView
+            while (root.parent is View) root = root.parent as View
+            val lp = root.layoutParams as? android.view.WindowManager.LayoutParams ?: return
+            lp.flags = lp.flags or android.view.WindowManager.LayoutParams.FLAG_DIM_BEHIND
+            lp.dimAmount = 0.35f
+            (getSystemService(WINDOW_SERVICE) as android.view.WindowManager)
+                .updateViewLayout(root, lp)
+        } catch (e: Exception) {
+            // Best-effort emphasis; ignore if the internal view tree differs.
+        }
     }
 
     private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()

@@ -1,9 +1,11 @@
 package com.vdbrowser.app
 
+import android.net.Uri
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageButton
+import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 
@@ -15,6 +17,7 @@ class BookmarkAdapter(
 ) : RecyclerView.Adapter<BookmarkAdapter.VH>() {
 
     class VH(view: View) : RecyclerView.ViewHolder(view) {
+        val favicon: ImageView = view.findViewById(R.id.bookmarkFavicon)
         val title: TextView = view.findViewById(R.id.bookmarkTitle)
         val url: TextView = view.findViewById(R.id.bookmarkUrl)
         val delete: ImageButton = view.findViewById(R.id.bookmarkDelete)
@@ -30,6 +33,17 @@ class BookmarkAdapter(
         val item = items[position]
         holder.title.text = item.title.ifBlank { item.url }
         holder.url.text = item.url
+
+        // Load the site favicon, falling back to the globe glyph.
+        val host = runCatching { Uri.parse(item.url).host }.getOrNull().orEmpty()
+        holder.favicon.setImageResource(R.drawable.ic_public)
+        holder.favicon.tag = host
+        if (host.isNotBlank()) {
+            FaviconLoader.load(host) { bmp ->
+                if (bmp != null && holder.favicon.tag == host) holder.favicon.setImageBitmap(bmp)
+            }
+        }
+
         holder.itemView.setOnClickListener { onOpen(item) }
         holder.delete.setOnClickListener {
             val pos = holder.bindingAdapterPosition
