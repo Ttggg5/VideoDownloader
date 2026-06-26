@@ -451,19 +451,34 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        // Bound the height so long lists scroll, then place it above the FAB.
-        val maxH = (resources.displayMetrics.heightPixels * 0.6f).toInt()
+        // Place the popup fully above or below the FAB (whichever has more room),
+        // so it never covers the button. Cap the height so long lists scroll.
+        val margin = dp(8)
+        val fab = binding.dlFab
+        val fabLoc = IntArray(2); fab.getLocationInWindow(fabLoc)
+        val rootLoc = IntArray(2); binding.root.getLocationInWindow(rootLoc)
+        val rootTop = rootLoc[1]
+        val rootBottom = rootLoc[1] + binding.root.height
+        val rootLeft = rootLoc[0]
+        val rootRight = rootLoc[0] + binding.root.width
+
+        val spaceAbove = fabLoc[1] - rootTop - margin
+        val spaceBelow = rootBottom - (fabLoc[1] + fab.height) - margin
+        val showAbove = spaceAbove >= spaceBelow
+        val avail = (if (showAbove) spaceAbove else spaceBelow)
+            .coerceAtMost((resources.displayMetrics.heightPixels * 0.6f).toInt())
+            .coerceAtLeast(dp(120))
+
         content.measure(
             View.MeasureSpec.makeMeasureSpec(widthPx, View.MeasureSpec.EXACTLY),
-            View.MeasureSpec.makeMeasureSpec(maxH, View.MeasureSpec.AT_MOST)
+            View.MeasureSpec.makeMeasureSpec(avail, View.MeasureSpec.AT_MOST)
         )
         popup.height = content.measuredHeight
 
-        val loc = IntArray(2)
-        binding.dlFab.getLocationInWindow(loc)
-        val margin = dp(8)
-        val x = (loc[0] + binding.dlFab.width - widthPx).coerceAtLeast(margin)
-        val y = (loc[1] - popup.height - margin).coerceAtLeast(margin)
+        val maxX = (rootRight - widthPx - margin).coerceAtLeast(rootLeft + margin)
+        val x = (fabLoc[0] + fab.width - widthPx).coerceIn(rootLeft + margin, maxX)
+        val y = if (showAbove) fabLoc[1] - popup.height - margin
+        else fabLoc[1] + fab.height + margin
         popup.showAtLocation(binding.root, Gravity.NO_GRAVITY, x, y)
     }
 

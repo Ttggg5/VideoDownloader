@@ -4,4 +4,10 @@
         <item name="colorPrimary">@color/brand_primary</item>
         <item name="colorPrimaryDark">@color/brand_primary_dark</item>
     </style>
+
+    <!-- Forces the download FAB to be a full circle (M3 FABs are rounded squares). -->
+    <style name="ShapeAppearanceOverlay.Fab.Circle" parent="">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">50%</item>
+    </style>
 </resources>

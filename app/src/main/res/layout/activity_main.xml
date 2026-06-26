@@ -127,7 +127,10 @@
             android:id="@+id/btnDownloads"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:layout_marginEnd="8dp"
             android:contentDescription="@string/downloads"
+            app:shapeAppearanceOverlay="@style/ShapeAppearanceOverlay.Fab.Circle"
             app:srcCompat="@drawable/ic_download"
             app:tint="@android:color/white" />
 
