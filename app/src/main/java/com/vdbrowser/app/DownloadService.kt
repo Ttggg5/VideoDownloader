@@ -54,6 +54,9 @@ class DownloadService : Service() {
             } else {
                 DownloadEngine.download(applicationContext, job, item)
             }
+            DownloadHistory.record(
+                applicationContext, item.title, item.downloaded.get(), item.state.name
+            )
             if (active.decrementAndGet() <= 0) handler.post { finishIfIdle() }
         }
         return START_NOT_STICKY

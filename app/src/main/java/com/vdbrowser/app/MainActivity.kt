@@ -406,7 +406,8 @@ class MainActivity : AppCompatActivity() {
         }
         popup.menu.add(0, MENU_BOOKMARKS, 4, R.string.bookmarks)
         popup.menu.add(0, MENU_DOWNLOADS, 5, R.string.menu_downloads)
-        popup.menu.add(0, MENU_ADBLOCK, 6, getString(R.string.menu_adblock)).apply {
+        popup.menu.add(0, MENU_HISTORY, 6, R.string.menu_history)
+        popup.menu.add(0, MENU_ADBLOCK, 7, getString(R.string.menu_adblock)).apply {
             isCheckable = true
             isChecked = adBlockEnabled
         }
@@ -418,6 +419,7 @@ class MainActivity : AppCompatActivity() {
                 MENU_BOOKMARK_ADD -> { toggleBookmark(); true }
                 MENU_BOOKMARKS -> { showBookmarks(); true }
                 MENU_DOWNLOADS -> { showDownloadsDialog(); true }
+                MENU_HISTORY -> { showHistory(); true }
                 MENU_ADBLOCK -> { toggleAdBlock(); true }
                 else -> false
             }
@@ -479,7 +481,12 @@ class MainActivity : AppCompatActivity() {
         val recycler = content.findViewById<RecyclerView>(R.id.downloadsList)
         val empty = content.findViewById<TextView>(R.id.downloadsEmpty)
         recycler.layoutManager = LinearLayoutManager(this)
-        val adapter = DownloadProgressAdapter(emptyList())
+        val adapter = DownloadProgressAdapter(
+            emptyList(),
+            onPause = { id -> Downloads.pause(id) },
+            onResume = { id -> Downloads.resume(id) },
+            onCancel = { id -> Downloads.cancel(id) }
+        )
         recycler.adapter = adapter
 
         val handler = Handler(Looper.getMainLooper())
@@ -494,6 +501,35 @@ class MainActivity : AppCompatActivity() {
         }
         sheet.setOnShowListener { handler.post(refresh) }
         sheet.setOnDismissListener { handler.removeCallbacks(refresh) }
+        sheet.show()
+    }
+
+    private fun showHistory() {
+        val sheet = BottomSheetDialog(this)
+        val content = layoutInflater.inflate(R.layout.sheet_history, null)
+        sheet.setContentView(content)
+
+        val recycler = content.findViewById<RecyclerView>(R.id.historyList)
+        val empty = content.findViewById<TextView>(R.id.historyEmpty)
+        val clear = content.findViewById<View>(R.id.btnClearHistory)
+        val items = DownloadHistory.all(this)
+
+        fun render(list: List<DownloadHistory.Entry>) {
+            if (list.isEmpty()) {
+                recycler.visibility = View.GONE
+                empty.visibility = View.VISIBLE
+            } else {
+                recycler.visibility = View.VISIBLE
+                empty.visibility = View.GONE
+                recycler.layoutManager = LinearLayoutManager(this)
+                recycler.adapter = HistoryAdapter(list)
+            }
+        }
+        render(items)
+        clear.setOnClickListener {
+            DownloadHistory.clear(this)
+            render(emptyList())
+        }
         sheet.show()
     }
 
@@ -555,6 +591,7 @@ class MainActivity : AppCompatActivity() {
         private const val MENU_BOOKMARK_ADD = 4
         private const val MENU_BOOKMARKS = 5
         private const val MENU_DOWNLOADS = 6
-        private const val MENU_ADBLOCK = 7
+        private const val MENU_HISTORY = 7
+        private const val MENU_ADBLOCK = 8
     }
 }

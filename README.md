@@ -35,7 +35,10 @@ and lets you download them with one tap.
   keyed) and copies streams without re-encoding, so it's fast and lossless.
 - **Download progress dialog** — the overflow (⋮) menu → *Downloads in progress*
   shows every download this session with a live progress bar, **transfer speed**,
-  and byte counter.
+  and byte counter, plus **pause / resume / cancel** controls. Pause/resume works
+  per segment (each resumes from where it stopped) for range-capable servers.
+- **Download history** — overflow → *Download history* lists finished downloads
+  (state, size, time) persistently across restarts, with a Clear action.
 - **Ad/tracker blocker** — requests to a curated list of ad and analytics hosts
   are dropped in `shouldInterceptRequest`. Toggle it from the overflow menu;
   the choice is remembered.

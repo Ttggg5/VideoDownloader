@@ -9,7 +9,7 @@ import java.util.concurrent.atomic.AtomicLong
  */
 object Downloads {
 
-    enum class State { RUNNING, COMPLETED, FAILED }
+    enum class State { RUNNING, PAUSED, COMPLETED, FAILED, CANCELED }
 
     /** Mutable live state for one download. Bytes are atomic for cross-thread updates. */
     class Item(val id: Long, @Volatile var title: String, @Volatile var total: Long) {
@@ -17,6 +17,11 @@ object Downloads {
 
         @Volatile var state: State = State.RUNNING
         @Volatile var speed: Long = 0L          // bytes/sec, refreshed by sampleSpeed()
+
+        // Control flags read by the download engine.
+        @Volatile var paused: Boolean = false
+        @Volatile var cancelled: Boolean = false
+        @Volatile var resumable: Boolean = false
 
         // Sampling state for speed calculation.
         @Volatile var lastBytes: Long = 0L
@@ -30,7 +35,8 @@ object Downloads {
         val downloaded: Long,
         val total: Long,
         val state: State,
-        val speed: Long
+        val speed: Long,
+        val resumable: Boolean
     )
 
     private val items = CopyOnWriteArrayList<Item>()
@@ -43,10 +49,22 @@ object Downloads {
     }
 
     fun snapshot(): List<Snapshot> = items.map {
-        Snapshot(it.id, it.title, it.downloaded.get(), it.total, it.state, it.speed)
+        Snapshot(it.id, it.title, it.downloaded.get(), it.total, it.state, it.speed, it.resumable)
     }
 
     fun activeCount(): Int = items.count { it.state == State.RUNNING }
+
+    private fun find(id: Long): Item? = items.firstOrNull { it.id == id }
+
+    fun pause(id: Long) = find(id)?.let {
+        if (it.state == State.RUNNING) { it.paused = true; it.state = State.PAUSED }
+    }
+
+    fun resume(id: Long) = find(id)?.let {
+        if (it.state == State.PAUSED) { it.paused = false; it.lastTime = 0L; it.state = State.RUNNING }
+    }
+
+    fun cancel(id: Long) = find(id)?.let { it.cancelled = true; it.paused = false }
 
     fun totalProgressPercent(): Int {
         var done = 0L

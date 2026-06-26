@@ -35,4 +35,9 @@
     <string name="delete">Delete</string>
     <string name="bookmark_added">Bookmarked</string>
     <string name="bookmark_removed">Bookmark removed</string>
+    <string name="menu_history">Download history</string>
+    <string name="no_history">No downloads yet.</string>
+    <string name="clear">Clear</string>
+    <string name="pause">Pause</string>
+    <string name="cancel">Cancel</string>
 </resources>
