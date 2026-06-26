@@ -603,14 +603,21 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showLanguageDialog() {
-        val tags = arrayOf("", "en", "zh")
+        val tags = arrayOf("", "en", "zh-Hans", "zh-Hant")
         val labels = arrayOf(
             getString(R.string.lang_system),
             getString(R.string.lang_english),
-            getString(R.string.lang_chinese)
+            getString(R.string.lang_chinese_simplified),
+            getString(R.string.lang_chinese_traditional)
         )
         val current = AppCompatDelegate.getApplicationLocales()
-        val currentTag = if (current.isEmpty) "" else current[0]?.language ?: ""
+        val loc = if (current.isEmpty) null else current[0]
+        val currentTag = when {
+            loc == null -> ""
+            loc.language != "zh" -> loc.language
+            loc.script == "Hant" -> "zh-Hant"
+            else -> "zh-Hans"
+        }
         val checked = tags.indexOf(currentTag).coerceAtLeast(0)
 
         AlertDialog.Builder(this)
