@@ -56,6 +56,15 @@ class MainActivity : AppCompatActivity() {
     private var adBlockEnabled = true
     private var tabStripAdapter: TabStripAdapter? = null
 
+    // User options (persisted in the "settings" SharedPreferences).
+    private var minSizeBytes = 0L
+    private var desktopMode = false
+    private var searchEngine = "google"
+
+    private val mobileUa by lazy {
+        WebSettings.getDefaultUserAgent(this).replace("; wv", "")
+    }
+
     /** Receives the resolved href from a long-pressed link. */
     private val linkHandler = Handler(Looper.getMainLooper()) { msg ->
         val url = msg.data?.getString("url")
@@ -73,8 +82,11 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        adBlockEnabled = getSharedPreferences("settings", MODE_PRIVATE)
-            .getBoolean("adblock", true)
+        val prefs = getSharedPreferences("settings", MODE_PRIVATE)
+        adBlockEnabled = prefs.getBoolean("adblock", true)
+        minSizeBytes = prefs.getLong("min_size", 0L)
+        desktopMode = prefs.getBoolean("desktop", false)
+        searchEngine = prefs.getString("search_engine", "google") ?: "google"
         AdBlocker.init(applicationContext)
 
         requestNotificationPermissionIfNeeded()
@@ -188,8 +200,7 @@ class MainActivity : AppCompatActivity() {
             mixedContentMode = WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE
             setSupportMultipleWindows(true)
             javaScriptCanOpenWindowsAutomatically = true
-            // Present a desktop-ish UA without the "wv" tag so sites don't block the WebView.
-            userAgentString = userAgentString.replace("; wv", "")
+            userAgentString = if (desktopMode) DESKTOP_UA else mobileUa
         }
         CookieManager.getInstance().setAcceptCookie(true)
         CookieManager.getInstance().setAcceptThirdPartyCookies(web, true)
@@ -416,11 +427,20 @@ class MainActivity : AppCompatActivity() {
         val url = when {
             raw.startsWith("http://") || raw.startsWith("https://") -> raw
             looksLikeUrl -> "https://$raw"
-            else -> "https://www.google.com/search?q=" + android.net.Uri.encode(raw)
+            else -> searchUrl(raw)
         }
         currentTab.webView.loadUrl(url)
         hideKeyboard()
         binding.urlBar.clearFocus()
+    }
+
+    private fun searchUrl(query: String): String {
+        val q = android.net.Uri.encode(query)
+        return when (searchEngine) {
+            "bing" -> "https://www.bing.com/search?q=$q"
+            "ddg" -> "https://duckduckgo.com/?q=$q"
+            else -> "https://www.google.com/search?q=$q"
+        }
     }
 
     /** Scan the rendered DOM for <video>/<source> elements after the page settles. */
@@ -446,7 +466,7 @@ class MainActivity : AppCompatActivity() {
 
     /** Shows detected media as a popup anchored above the floating download button. */
     private fun showMediaSheet() {
-        val items = currentTab.sniffer.snapshot()
+        val items = currentTab.sniffer.snapshot().toMutableList()
         val content = layoutInflater.inflate(R.layout.sheet_downloads, null)
         val widthPx = minOf(resources.displayMetrics.widthPixels - dp(24), dp(360))
 
@@ -495,12 +515,23 @@ class MainActivity : AppCompatActivity() {
             )
             recycler.adapter = adapter
 
-            // Resolve each video's size in the background and update its row.
-            items.forEach { item ->
+            // Resolve each video's size in the background, update or filter its row.
+            items.toList().forEach { item ->
                 if (item.sizeBytes == MediaItem.SIZE_UNKNOWN) {
                     item.sizeBytes = MediaItem.SIZE_FETCHING
                     SizeFetcher.fetch(item.url, pageUrl, ua) { size ->
-                        runOnUiThread { adapter.updateSize(item, size) }
+                        runOnUiThread {
+                            if (minSizeBytes > 0 && size in 1 until minSizeBytes) {
+                                adapter.removeItem(item)
+                                header.text = getString(R.string.detected_media, items.size)
+                                if (items.isEmpty()) {
+                                    recycler.visibility = View.GONE
+                                    empty.visibility = View.VISIBLE
+                                }
+                            } else {
+                                adapter.updateSize(item, size)
+                            }
+                        }
                     }
                 }
             }
@@ -589,7 +620,6 @@ class MainActivity : AppCompatActivity() {
     private fun showOverflowMenu() {
         val popup = PopupMenu(this, binding.btnMenu)
         popup.menuInflater.inflate(R.menu.overflow_menu, popup.menu)
-        popup.menu.findItem(R.id.menu_adblock)?.isChecked = adBlockEnabled
         forceMenuIcons(popup)
         popup.setOnMenuItemClickListener { item ->
             when (item.itemId) {
@@ -598,8 +628,7 @@ class MainActivity : AppCompatActivity() {
                 R.id.menu_bookmarks -> { showBookmarks(); true }
                 R.id.menu_downloads -> { showDownloadsDialog(); true }
                 R.id.menu_history -> { showHistory(); true }
-                R.id.menu_language -> { showLanguageDialog(); true }
-                R.id.menu_adblock -> { toggleAdBlock(); true }
+                R.id.menu_options -> { showOptions(); true }
                 else -> false
             }
         }
@@ -655,6 +684,124 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun prefs() = getSharedPreferences("settings", MODE_PRIVATE)
+
+    @SuppressLint("UseSwitchCompatOrMaterialCode")
+    private fun showOptions() {
+        val sheet = BottomSheetDialog(this)
+        val content = layoutInflater.inflate(R.layout.sheet_options, null)
+        sheet.setContentView(content)
+
+        val langValue = content.findViewById<TextView>(R.id.optLanguageValue)
+        val sizeValue = content.findViewById<TextView>(R.id.optMinSizeValue)
+        val searchValue = content.findViewById<TextView>(R.id.optSearchValue)
+        val adblockSwitch =
+            content.findViewById<com.google.android.material.materialswitch.MaterialSwitch>(R.id.optAdblockSwitch)
+        val desktopSwitch =
+            content.findViewById<com.google.android.material.materialswitch.MaterialSwitch>(R.id.optDesktopSwitch)
+
+        fun sizeLabel() =
+            if (minSizeBytes <= 0) getString(R.string.size_off) else formatBytes(minSizeBytes)
+
+        langValue.text = currentLanguageLabel()
+        sizeValue.text = sizeLabel()
+        searchValue.text = searchEngineLabel()
+        adblockSwitch.isChecked = adBlockEnabled
+        desktopSwitch.isChecked = desktopMode
+
+        content.findViewById<View>(R.id.optLanguage).setOnClickListener {
+            sheet.dismiss(); showLanguageDialog()
+        }
+        content.findViewById<View>(R.id.optMinSize).setOnClickListener {
+            showMinSizeDialog { sizeValue.text = sizeLabel() }
+        }
+        content.findViewById<View>(R.id.optSearch).setOnClickListener {
+            showSearchEngineDialog { searchValue.text = searchEngineLabel() }
+        }
+        content.findViewById<View>(R.id.optAdblock).setOnClickListener {
+            adBlockEnabled = !adBlockEnabled
+            adblockSwitch.isChecked = adBlockEnabled
+            prefs().edit().putBoolean("adblock", adBlockEnabled).apply()
+        }
+        content.findViewById<View>(R.id.optDesktop).setOnClickListener {
+            desktopMode = !desktopMode
+            desktopSwitch.isChecked = desktopMode
+            prefs().edit().putBoolean("desktop", desktopMode).apply()
+            applyDesktopMode()
+        }
+        content.findViewById<View>(R.id.optClearData).setOnClickListener {
+            clearBrowsingData()
+            Toast.makeText(this, R.string.data_cleared, Toast.LENGTH_SHORT).show()
+        }
+        sheet.show()
+    }
+
+    private fun currentLanguageLabel(): String {
+        val cur = AppCompatDelegate.getApplicationLocales()
+        val loc = if (cur.isEmpty) null else cur[0]
+        return when {
+            loc == null -> getString(R.string.lang_system)
+            loc.language != "zh" -> getString(R.string.lang_english)
+            loc.script == "Hant" -> getString(R.string.lang_chinese_traditional)
+            else -> getString(R.string.lang_chinese_simplified)
+        }
+    }
+
+    private fun searchEngineLabel(): String = when (searchEngine) {
+        "bing" -> "Bing"
+        "ddg" -> "DuckDuckGo"
+        else -> "Google"
+    }
+
+    private fun showMinSizeDialog(onChanged: () -> Unit) {
+        val values = longArrayOf(
+            0L, 100L * 1024, 500L * 1024, 1L * 1024 * 1024, 5L * 1024 * 1024, 10L * 1024 * 1024
+        )
+        val labels = values
+            .map { if (it <= 0) getString(R.string.size_off) else formatBytes(it) }
+            .toTypedArray()
+        val checked = values.indexOfFirst { it == minSizeBytes }.coerceAtLeast(0)
+        AlertDialog.Builder(this)
+            .setTitle(R.string.opt_min_size)
+            .setSingleChoiceItems(labels, checked) { d, which ->
+                minSizeBytes = values[which]
+                prefs().edit().putLong("min_size", minSizeBytes).apply()
+                onChanged()
+                d.dismiss()
+            }
+            .setNegativeButton(R.string.cancel, null)
+            .show()
+    }
+
+    private fun showSearchEngineDialog(onChanged: () -> Unit) {
+        val keys = arrayOf("google", "bing", "ddg")
+        val labels = arrayOf("Google", "Bing", "DuckDuckGo")
+        val checked = keys.indexOf(searchEngine).coerceAtLeast(0)
+        AlertDialog.Builder(this)
+            .setTitle(R.string.opt_search_engine)
+            .setSingleChoiceItems(labels, checked) { d, which ->
+                searchEngine = keys[which]
+                prefs().edit().putString("search_engine", searchEngine).apply()
+                onChanged()
+                d.dismiss()
+            }
+            .setNegativeButton(R.string.cancel, null)
+            .show()
+    }
+
+    private fun applyDesktopMode() {
+        val ua = if (desktopMode) DESKTOP_UA else mobileUa
+        tabs.forEach { it.webView.settings.userAgentString = ua }
+        currentTab.webView.reload()
+    }
+
+    private fun clearBrowsingData() {
+        CookieManager.getInstance().removeAllCookies(null)
+        CookieManager.getInstance().flush()
+        android.webkit.WebStorage.getInstance().deleteAllData()
+        tabs.forEach { it.webView.clearCache(true); it.webView.clearHistory() }
+    }
+
     private fun showLanguageDialog() {
         val tags = arrayOf("", "en", "zh-Hans", "zh-Hant")
         val labels = arrayOf(
@@ -685,14 +832,6 @@ class MainActivity : AppCompatActivity() {
             }
             .setNegativeButton(R.string.cancel, null)
             .show()
-    }
-
-    private fun toggleAdBlock() {
-        adBlockEnabled = !adBlockEnabled
-        getSharedPreferences("settings", MODE_PRIVATE).edit()
-            .putBoolean("adblock", adBlockEnabled).apply()
-        val msg = if (adBlockEnabled) R.string.adblock_on else R.string.adblock_off
-        Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
     }
 
     /** Bottom sheet that polls the download store and shows live progress for each download. */
@@ -806,5 +945,11 @@ class MainActivity : AppCompatActivity() {
             tab.sniffer.consider(url)
             if (tab === currentTab) runOnUiThread { updateBadge() }
         }
+    }
+
+    companion object {
+        private const val DESKTOP_UA =
+            "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) " +
+                "Chrome/120.0.0.0 Safari/537.36"
     }
 }

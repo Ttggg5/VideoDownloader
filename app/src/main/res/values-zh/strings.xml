@@ -51,4 +51,12 @@
     <string name="copy_link">复制链接</string>
     <string name="link_copied">已复制链接</string>
     <string name="opened_in_new_tab">已在新标签页中打开</string>
+    <string name="menu_options">选项</string>
+    <string name="options_title">选项</string>
+    <string name="opt_min_size">最小视频大小</string>
+    <string name="opt_search_engine">搜索引擎</string>
+    <string name="opt_desktop">桌面版网站</string>
+    <string name="opt_clear_data">清除浏览数据</string>
+    <string name="size_off">关闭</string>
+    <string name="data_cleared">已清除浏览数据</string>
 </resources>

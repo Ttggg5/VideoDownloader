@@ -9,7 +9,7 @@ import androidx.recyclerview.widget.RecyclerView
 
 /** Renders detected media (thumbnail + size) inside the downloads bottom sheet. */
 class MediaAdapter(
-    private val items: List<MediaItem>,
+    private val items: MutableList<MediaItem>,
     private val onClick: (MediaItem) -> Unit,
     private val onNeedThumb: (MediaItem) -> Unit = {}
 ) : RecyclerView.Adapter<MediaAdapter.VH>() {
@@ -67,6 +67,15 @@ class MediaAdapter(
     fun updateThumb(item: MediaItem) {
         val index = items.indexOf(item)
         if (index >= 0) notifyItemChanged(index)
+    }
+
+    /** Remove a row (e.g. filtered out by the minimum-size option). */
+    fun removeItem(item: MediaItem) {
+        val index = items.indexOf(item)
+        if (index >= 0) {
+            items.removeAt(index)
+            notifyItemRemoved(index)
+        }
     }
 
     private fun shortUrl(url: String): String =

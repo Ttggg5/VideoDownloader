@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:maxHeight="560dp"
+    android:overScrollMode="never">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingTop="16dp"
+        android:paddingBottom="8dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingHorizontal="18dp"
+            android:paddingBottom="10dp">
+
+            <ImageView
+                android:layout_width="26dp"
+                android:layout_height="26dp"
+                android:layout_marginEnd="10dp"
+                android:contentDescription="@string/options_title"
+                android:src="@drawable/ic_settings"
+                app:tint="@color/brand_primary" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/options_title"
+                android:textColor="@color/brand_primary"
+                android:textSize="19sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginBottom="4dp"
+            android:background="#22808080" />
+
+        <!-- Language -->
+        <LinearLayout
+            android:id="@+id/optLanguage"
+            style="@style/OptionRow">
+
+            <ImageView style="@style/OptionIcon" android:src="@drawable/ic_language" />
+
+            <TextView style="@style/OptionLabel" android:text="@string/menu_language" />
+
+            <TextView android:id="@+id/optLanguageValue" style="@style/OptionValue" />
+        </LinearLayout>
+
+        <!-- Minimum video size -->
+        <LinearLayout
+            android:id="@+id/optMinSize"
+            style="@style/OptionRow">
+
+            <ImageView style="@style/OptionIcon" android:src="@drawable/ic_filter" />
+
+            <TextView style="@style/OptionLabel" android:text="@string/opt_min_size" />
+
+            <TextView android:id="@+id/optMinSizeValue" style="@style/OptionValue" />
+        </LinearLayout>
+
+        <!-- Search engine -->
+        <LinearLayout
+            android:id="@+id/optSearch"
+            style="@style/OptionRow">
+
+            <ImageView style="@style/OptionIcon" android:src="@drawable/ic_search" />
+
+            <TextView style="@style/OptionLabel" android:text="@string/opt_search_engine" />
+
+            <TextView android:id="@+id/optSearchValue" style="@style/OptionValue" />
+        </LinearLayout>
+
+        <!-- Ad blocker -->
+        <LinearLayout
+            android:id="@+id/optAdblock"
+            style="@style/OptionRow">
+
+            <ImageView style="@style/OptionIcon" android:src="@drawable/ic_block" />
+
+            <TextView style="@style/OptionLabel" android:text="@string/menu_adblock" />
+
+            <com.google.android.material.materialswitch.MaterialSwitch
+                android:id="@+id/optAdblockSwitch"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:clickable="false"
+                android:focusable="false" />
+        </LinearLayout>
+
+        <!-- Desktop site -->
+        <LinearLayout
+            android:id="@+id/optDesktop"
+            style="@style/OptionRow">
+
+            <ImageView style="@style/OptionIcon" android:src="@drawable/ic_desktop" />
+
+            <TextView style="@style/OptionLabel" android:text="@string/opt_desktop" />
+
+            <com.google.android.material.materialswitch.MaterialSwitch
+                android:id="@+id/optDesktopSwitch"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:clickable="false"
+                android:focusable="false" />
+        </LinearLayout>
+
+        <!-- Clear browsing data -->
+        <LinearLayout
+            android:id="@+id/optClearData"
+            style="@style/OptionRow">
+
+            <ImageView style="@style/OptionIcon" android:src="@drawable/ic_delete" />
+
+            <TextView style="@style/OptionLabel" android:text="@string/opt_clear_data" />
+        </LinearLayout>
+    </LinearLayout>
+</ScrollView>
