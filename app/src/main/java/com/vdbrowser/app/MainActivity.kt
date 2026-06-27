@@ -923,6 +923,7 @@ class MainActivity : AppCompatActivity() {
         if (item.isStream) {
             HlsSize.analyze(item.url, tab.url, currentUa) { info ->
                 item.isMaster = info.isMaster
+                item.downloadUrl = info.variantUrl
                 if (info.variants.isNotEmpty()) tab.sniffer.addVariants(info.variants)
                 item.sizeBytes = if (info.size > 0) info.size else MediaItem.SIZE_UNKNOWN
                 runOnUiThread { if (tab === currentTab) updateBadge() }

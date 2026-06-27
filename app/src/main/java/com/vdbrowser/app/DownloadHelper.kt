@@ -16,15 +16,17 @@ object DownloadHelper {
 
     fun enqueue(context: Context, item: MediaItem, pageUrl: String?, userAgent: String?) {
         try {
-            // Adaptive streams are remuxed by FFmpeg into a single .mp4.
+            // Adaptive streams are remuxed by FFmpeg into a single .mp4. Download
+            // the specific variant we measured, so size and file match.
+            val downloadUrl = if (item.isStream) item.downloadUrl ?: item.url else item.url
             val fileName = if (item.isStream) sanitize(item.label, "mp4").replaceAfterLast('.', "mp4")
             else sanitize(item.label, item.type)
             val mime = if (item.isStream) "video/mp4" else mimeFor(item.type)
             val intent = Intent(context, DownloadService::class.java).apply {
-                putExtra(DownloadService.EX_URL, item.url)
+                putExtra(DownloadService.EX_URL, downloadUrl)
                 putExtra(DownloadService.EX_NAME, fileName)
                 putExtra(DownloadService.EX_MIME, mime)
-                putExtra(DownloadService.EX_COOKIE, CookieManager.getInstance().getCookie(item.url))
+                putExtra(DownloadService.EX_COOKIE, CookieManager.getInstance().getCookie(downloadUrl))
                 putExtra(DownloadService.EX_UA, userAgent)
                 putExtra(DownloadService.EX_REFERER, pageUrl)
                 putExtra(DownloadService.EX_STREAM, item.isStream)

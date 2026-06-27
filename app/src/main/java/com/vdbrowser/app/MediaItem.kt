@@ -32,6 +32,10 @@ data class MediaItem(
     @Volatile
     var isMaster: Boolean = false
 
+    /** For HLS: the specific variant playlist to download (matches the sized one). */
+    @Volatile
+    var downloadUrl: String? = null
+
     companion object {
         const val SIZE_UNKNOWN = -1L
         const val SIZE_FETCHING = -2L
