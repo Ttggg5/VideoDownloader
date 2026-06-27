@@ -28,6 +28,10 @@ data class MediaItem(
     /** Detection order, used to keep the first item when de-duplicating. */
     var order: Long = 0
 
+    /** For HLS: true once we've confirmed this playlist is a master. */
+    @Volatile
+    var isMaster: Boolean = false
+
     companion object {
         const val SIZE_UNKNOWN = -1L
         const val SIZE_FETCHING = -2L

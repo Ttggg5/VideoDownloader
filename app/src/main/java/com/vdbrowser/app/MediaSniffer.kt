@@ -20,6 +20,10 @@ class MediaSniffer {
     private val items = ConcurrentHashMap<String, MediaItem>()
     private val seq = AtomicLong(1)
 
+    // Normalized (host+path) keys of HLS variant playlists referenced by a
+    // master, so they can be hidden in favour of the master.
+    private val variantKeys = ConcurrentHashMap.newKeySet<String>()
+
     // Note: ".ts" is intentionally excluded — those are HLS segments, not
     // standalone downloads, and would flood the list.
     private val directExt = setOf(
@@ -28,7 +32,20 @@ class MediaSniffer {
     )
     private val streamExt = setOf("m3u8", "mpd")
 
-    fun clear() = items.clear()
+    fun clear() {
+        items.clear()
+        variantKeys.clear()
+    }
+
+    /** Record variant playlist URLs reported by an HLS master so they're hidden. */
+    fun addVariants(urls: List<String>) {
+        urls.forEach { variantKeys.add(norm(it)) }
+    }
+
+    private fun norm(url: String): String {
+        val u = runCatching { Uri.parse(url) }.getOrNull()
+        return (u?.host ?: "") + (u?.path ?: url)
+    }
 
     /** De-duplicated list, streams first. */
     fun snapshot(): List<MediaItem> =
@@ -50,12 +67,19 @@ class MediaSniffer {
     private fun passes(item: MediaItem, minBytes: Long): Boolean =
         minBytes <= 0 || item.sizeBytes <= 0 || item.sizeBytes >= minBytes
 
-    /** Keep one item per de-dup key, preferring the first one detected. */
+    /** Keep one item per group; hide HLS variant playlists, prefer the master. */
     private fun deduped(): List<MediaItem> {
         val byKey = HashMap<String, MediaItem>()
         for (item in items.values.sortedBy { it.order }) {
+            // Skip variant playlists referenced by a master we've already seen.
+            if (item.isStream && variantKeys.contains(norm(item.url))) continue
             val key = dedupKey(item)
-            if (!byKey.containsKey(key)) byKey[key] = item
+            val existing = byKey[key]
+            when {
+                existing == null -> byKey[key] = item
+                // Within a host group, prefer the master playlist.
+                item.isStream && item.isMaster && !existing.isMaster -> byKey[key] = item
+            }
         }
         return byKey.values.toList()
     }

@@ -916,17 +916,22 @@ class MainActivity : AppCompatActivity() {
     /** Resolve a detected item's size in the background (drives the badge + filter). */
     private fun fetchSize(item: MediaItem, tab: Tab) {
         if (item.sizeBytes != MediaItem.SIZE_UNKNOWN) return
-        // Skip de-duplicated copies; only size the item that's actually shown.
-        if (!tab.sniffer.isRepresentative(item)) return
+        // Direct files: only size the representative copy. Streams: analyze all,
+        // so we can discover which playlist is the master.
+        if (!item.isStream && !tab.sniffer.isRepresentative(item)) return
         item.sizeBytes = MediaItem.SIZE_FETCHING
-        val onResult: (Long) -> Unit = { size ->
-            item.sizeBytes = if (size > 0) size else MediaItem.SIZE_UNKNOWN
-            runOnUiThread { if (tab === currentTab) updateBadge() }
-        }
         if (item.isStream) {
-            HlsSize.estimate(item.url, tab.url, currentUa, onResult)
+            HlsSize.analyze(item.url, tab.url, currentUa) { info ->
+                item.isMaster = info.isMaster
+                if (info.variants.isNotEmpty()) tab.sniffer.addVariants(info.variants)
+                item.sizeBytes = if (info.size > 0) info.size else MediaItem.SIZE_UNKNOWN
+                runOnUiThread { if (tab === currentTab) updateBadge() }
+            }
         } else {
-            SizeFetcher.fetch(item.url, tab.url, currentUa, onResult)
+            SizeFetcher.fetch(item.url, tab.url, currentUa) { size ->
+                item.sizeBytes = if (size > 0) size else MediaItem.SIZE_UNKNOWN
+                runOnUiThread { if (tab === currentTab) updateBadge() }
+            }
         }
     }
 

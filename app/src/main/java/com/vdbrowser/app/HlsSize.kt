@@ -7,86 +7,119 @@ import java.net.URL
 import java.util.concurrent.Executors
 
 /**
- * Estimates the byte size of an HLS (.m3u8) stream so it can be shown like a
- * normal video. For a master playlist it picks the highest-bandwidth variant
- * and multiplies its advertised bitrate by the stream's total duration. For a
- * media playlist it estimates the bitrate from the first segment. Best-effort:
- * returns -1 when it can't determine a size.
+ * Analyzes an HLS (.m3u8) playlist to (a) tell a master from a media playlist,
+ * (b) list a master's variant playlists so they can be hidden, and (c) estimate
+ * the stream's byte size so it shows like a normal video.
+ *
+ * Size estimates use the *average* bitrate where available (AVERAGE-BANDWIDTH
+ * for a master; sampled segment sizes for a media playlist) multiplied by the
+ * total duration — far closer to the real file size than peak bitrate.
  */
 object HlsSize {
 
-    private val pool = Executors.newFixedThreadPool(2)
-    private const val MAX_PLAYLIST = 2 * 1024 * 1024  // 2 MB safety cap
+    data class Info(val size: Long, val variants: List<String>, val isMaster: Boolean)
 
-    fun estimate(url: String, pageUrl: String?, userAgent: String?, onResult: (Long) -> Unit) {
-        pool.execute { onResult(runCatching { compute(url, pageUrl, userAgent) }.getOrDefault(-1L)) }
+    private val pool = Executors.newFixedThreadPool(2)
+    private const val MAX_PLAYLIST = 4 * 1024 * 1024
+
+    private data class Variant(val bandwidth: Long, val url: String)
+
+    fun analyze(url: String, pageUrl: String?, userAgent: String?, onResult: (Info) -> Unit) {
+        pool.execute {
+            onResult(runCatching { compute(url, pageUrl, userAgent) }
+                .getOrDefault(Info(-1L, emptyList(), false)))
+        }
     }
 
-    private fun compute(url: String, pageUrl: String?, ua: String?): Long {
-        val text = fetchText(url, pageUrl, ua) ?: return -1L
+    private fun compute(url: String, pageUrl: String?, ua: String?): Info {
+        val text = fetchText(url, pageUrl, ua) ?: return Info(-1L, emptyList(), false)
 
         if (text.contains("#EXT-X-STREAM-INF")) {
-            val variant = bestVariant(text, url) ?: return -1L
-            val variantText = fetchText(variant.second, pageUrl, ua) ?: return -1L
-            val duration = totalDuration(variantText)
-            if (duration <= 0) return -1L
-            return (variant.first / 8.0 * duration).toLong()
+            val variants = parseVariants(text, url)
+            val urls = variants.map { it.url }
+            val best = variants.maxByOrNull { it.bandwidth }
+                ?: return Info(-1L, urls, true)
+            val variantText = fetchText(best.url, pageUrl, ua)
+            val duration = variantText?.let { totalDuration(it) } ?: 0.0
+            val size = if (duration > 0 && best.bandwidth > 0)
+                (best.bandwidth / 8.0 * duration).toLong() else -1L
+            return Info(size, urls, true)
         }
 
         if (text.contains("#EXTINF")) {
-            val duration = totalDuration(text)
-            val firstDur = firstSegmentDuration(text)
-            val firstSeg = firstSegmentUrl(text, url)
-            if (duration <= 0 || firstDur <= 0 || firstSeg == null) return -1L
-            val segLen = headLength(firstSeg, pageUrl, ua)
-            if (segLen <= 0) return -1L
-            val bitrate = segLen * 8.0 / firstDur          // bits per second
-            return (bitrate / 8.0 * duration).toLong()
+            return Info(estimateMediaSize(text, url, pageUrl, ua), emptyList(), false)
         }
 
-        return -1L
+        return Info(-1L, emptyList(), false)
     }
 
-    /** Returns the highest BANDWIDTH variant as (bandwidth, absoluteUrl). */
-    private fun bestVariant(master: String, baseUrl: String): Pair<Long, String>? {
+    /** Variants with AVERAGE-BANDWIDTH (preferred) or BANDWIDTH, absolute URLs. */
+    private fun parseVariants(master: String, baseUrl: String): List<Variant> {
         val lines = master.lines()
-        var best: Pair<Long, String>? = null
+        val out = ArrayList<Variant>()
         var i = 0
         while (i < lines.size) {
             val line = lines[i].trim()
             if (line.startsWith("#EXT-X-STREAM-INF")) {
-                val bandwidth = Regex("BANDWIDTH=(\\d+)").find(line)?.groupValues?.get(1)?.toLongOrNull() ?: 0L
+                val avg = Regex("AVERAGE-BANDWIDTH=(\\d+)").find(line)?.groupValues?.get(1)?.toLongOrNull()
+                val peak = Regex("BANDWIDTH=(\\d+)").find(line)?.groupValues?.get(1)?.toLongOrNull()
                 val uri = lines.getOrNull(i + 1)?.trim()
                 if (!uri.isNullOrEmpty() && !uri.startsWith("#")) {
                     val abs = resolve(baseUrl, uri)
-                    if (abs != null && (best == null || bandwidth > best!!.first)) {
-                        best = bandwidth to abs
-                    }
+                    if (abs != null) out.add(Variant(avg ?: peak ?: 0L, abs))
                 }
                 i += 2
             } else {
                 i++
             }
         }
-        return best
+        return out
+    }
+
+    /** Sample a few segments to estimate bytes/sec, then scale by total duration. */
+    private fun estimateMediaSize(media: String, baseUrl: String, pageUrl: String?, ua: String?): Long {
+        val segments = parseSegments(media, baseUrl)
+        val duration = segments.sumOf { it.second }
+        if (segments.isEmpty() || duration <= 0) return -1L
+
+        val sampleIdx = listOf(0, segments.size / 2, segments.size - 1).distinct()
+        var sumBytes = 0L
+        var sumDur = 0.0
+        for (idx in sampleIdx) {
+            val (segUrl, segDur) = segments[idx]
+            val len = headLength(segUrl, pageUrl, ua)
+            if (len > 0 && segDur > 0) {
+                sumBytes += len
+                sumDur += segDur
+            }
+        }
+        if (sumBytes <= 0 || sumDur <= 0) return -1L
+        return (sumBytes / sumDur * duration).toLong()
+    }
+
+    private fun parseSegments(media: String, baseUrl: String): List<Pair<String, Double>> {
+        val lines = media.lines()
+        val out = ArrayList<Pair<String, Double>>()
+        var i = 0
+        while (i < lines.size) {
+            val line = lines[i].trim()
+            val m = Regex("#EXTINF:([0-9.]+)").find(line)
+            if (m != null) {
+                val dur = m.groupValues[1].toDoubleOrNull() ?: 0.0
+                val uri = lines.getOrNull(i + 1)?.trim()
+                if (!uri.isNullOrEmpty() && !uri.startsWith("#")) {
+                    resolve(baseUrl, uri)?.let { out.add(it to dur) }
+                }
+                i += 2
+            } else {
+                i++
+            }
+        }
+        return out
     }
 
     private fun totalDuration(media: String): Double =
         Regex("#EXTINF:([0-9.]+)").findAll(media).sumOf { it.groupValues[1].toDoubleOrNull() ?: 0.0 }
-
-    private fun firstSegmentDuration(media: String): Double =
-        Regex("#EXTINF:([0-9.]+)").find(media)?.groupValues?.get(1)?.toDoubleOrNull() ?: 0.0
-
-    private fun firstSegmentUrl(media: String, baseUrl: String): String? {
-        val lines = media.lines()
-        for (j in lines.indices) {
-            if (lines[j].trim().startsWith("#EXTINF")) {
-                val uri = lines.getOrNull(j + 1)?.trim()
-                if (!uri.isNullOrEmpty() && !uri.startsWith("#")) return resolve(baseUrl, uri)
-            }
-        }
-        return null
-    }
 
     private fun resolve(baseUrl: String, ref: String): String? = runCatching {
         if (ref.startsWith("http://") || ref.startsWith("https://")) ref
