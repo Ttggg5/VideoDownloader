@@ -136,6 +136,8 @@
             android:layout_height="3dp"
             android:max="100"
             android:progress="0"
+            android:progressTint="@color/brand_primary"
+            android:indeterminateTint="@color/brand_primary"
             android:visibility="gone" />
 
         <androidx.swiperefreshlayout.widget.SwipeRefreshLayout

@@ -65,6 +65,10 @@ class MainActivity : AppCompatActivity() {
         WebSettings.getDefaultUserAgent(this).replace("; wv", "")
     }
 
+    /** User-agent in effect, captured for off-main-thread size fetches. */
+    @Volatile
+    private var currentUa: String = ""
+
     /** Receives the resolved href from a long-pressed link. */
     private val linkHandler = Handler(Looper.getMainLooper()) { msg ->
         val url = msg.data?.getString("url")
@@ -87,6 +91,7 @@ class MainActivity : AppCompatActivity() {
         minSizeBytes = prefs.getLong("min_size", 0L)
         desktopMode = prefs.getBoolean("desktop", false)
         searchEngine = prefs.getString("search_engine", "google") ?: "google"
+        currentUa = if (desktopMode) DESKTOP_UA else mobileUa
         AdBlocker.init(applicationContext)
 
         requestNotificationPermissionIfNeeded()
@@ -241,8 +246,11 @@ class MainActivity : AppCompatActivity() {
                 if (adBlockEnabled && AdBlocker.shouldBlock(reqUrl)) {
                     return AdBlocker.blockedResponse()
                 }
-                tab.sniffer.consider(reqUrl)
-                if (tab === currentTab) runOnUiThread { updateBadge() }
+                val found = tab.sniffer.consider(reqUrl)
+                if (found != null) {
+                    fetchSize(found, tab)
+                    if (tab === currentTab) runOnUiThread { updateBadge() }
+                }
                 return null
             }
         }
@@ -466,7 +474,8 @@ class MainActivity : AppCompatActivity() {
 
     /** Shows detected media as a popup anchored above the floating download button. */
     private fun showMediaSheet() {
-        val items = currentTab.sniffer.snapshot().toMutableList()
+        // Pre-filter by the minimum-size option so items don't pop in/out.
+        val items = currentTab.sniffer.snapshotPassing(minSizeBytes).toMutableList()
         val content = layoutInflater.inflate(R.layout.sheet_downloads, null)
         val widthPx = minOf(resources.displayMetrics.widthPixels - dp(24), dp(360))
 
@@ -483,6 +492,7 @@ class MainActivity : AppCompatActivity() {
         val recycler = content.findViewById<RecyclerView>(R.id.mediaList)
         val empty = content.findViewById<View>(R.id.emptyView)
         val header = content.findViewById<TextView>(R.id.sheetTitle)
+        val loading = content.findViewById<View>(R.id.mediaLoading)
         header.text = getString(R.string.detected_media, items.size)
 
         if (items.isEmpty()) {
@@ -492,8 +502,8 @@ class MainActivity : AppCompatActivity() {
             recycler.visibility = View.VISIBLE
             empty.visibility = View.GONE
             recycler.layoutManager = LinearLayoutManager(this)
-            val ua = currentTab.webView.settings.userAgentString
             val pageUrl = currentTab.url
+            val ua = currentUa
             lateinit var adapter: MediaAdapter
             adapter = MediaAdapter(
                 items,
@@ -515,26 +525,21 @@ class MainActivity : AppCompatActivity() {
             )
             recycler.adapter = adapter
 
-            // Resolve each video's size in the background, update or filter its row.
-            items.toList().forEach { item ->
-                if (item.sizeBytes == MediaItem.SIZE_UNKNOWN) {
-                    item.sizeBytes = MediaItem.SIZE_FETCHING
-                    SizeFetcher.fetch(item.url, pageUrl, ua) { size ->
-                        runOnUiThread {
-                            if (minSizeBytes > 0 && size in 1 until minSizeBytes) {
-                                adapter.removeItem(item)
-                                header.text = getString(R.string.detected_media, items.size)
-                                if (items.isEmpty()) {
-                                    recycler.visibility = View.GONE
-                                    empty.visibility = View.VISIBLE
-                                }
-                            } else {
-                                adapter.updateSize(item, size)
-                            }
-                        }
+            // Show a spinner while sizes are still resolving, refreshing as they land.
+            val handler = Handler(Looper.getMainLooper())
+            val poll = object : Runnable {
+                override fun run() {
+                    adapter.notifyDataSetChanged()
+                    if (currentTab.sniffer.hasPendingSizes()) {
+                        loading.visibility = View.VISIBLE
+                        handler.postDelayed(this, 400)
+                    } else {
+                        loading.visibility = View.GONE
                     }
                 }
             }
+            handler.post(poll)
+            popup.setOnDismissListener { handler.removeCallbacks(poll) }
         }
 
         // Place the popup fully above or below the FAB (whichever has more room),
@@ -790,8 +795,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun applyDesktopMode() {
-        val ua = if (desktopMode) DESKTOP_UA else mobileUa
-        tabs.forEach { it.webView.settings.userAgentString = ua }
+        currentUa = if (desktopMode) DESKTOP_UA else mobileUa
+        tabs.forEach { it.webView.settings.userAgentString = currentUa }
         currentTab.webView.reload()
     }
 
@@ -854,7 +859,12 @@ class MainActivity : AppCompatActivity() {
         val handler = Handler(Looper.getMainLooper())
         val refresh = object : Runnable {
             override fun run() {
-                val statuses = Downloads.snapshot()
+                // Only show in-flight downloads; completed/canceled move to history.
+                val statuses = Downloads.snapshot().filter {
+                    it.state == Downloads.State.RUNNING ||
+                        it.state == Downloads.State.PAUSED ||
+                        it.state == Downloads.State.FAILED
+                }
                 empty.visibility = if (statuses.isEmpty()) View.VISIBLE else View.GONE
                 recycler.visibility = if (statuses.isEmpty()) View.GONE else View.VISIBLE
                 adapter.submit(statuses)
@@ -896,10 +906,20 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun updateBadge() {
-        val count = currentTab.sniffer.count()
+        val count = currentTab.sniffer.countPassing(minSizeBytes)
         binding.downloadBadge.apply {
             visibility = if (count > 0) View.VISIBLE else View.GONE
-            text = if (count > 9) "9+" else count.toString()
+            text = if (count > 99) "99+" else count.toString()
+        }
+    }
+
+    /** Resolve a detected item's size in the background (drives the badge + filter). */
+    private fun fetchSize(item: MediaItem, tab: Tab) {
+        if (item.sizeBytes != MediaItem.SIZE_UNKNOWN) return
+        item.sizeBytes = MediaItem.SIZE_FETCHING
+        SizeFetcher.fetch(item.url, tab.url, currentUa) { size ->
+            item.sizeBytes = if (size > 0) size else MediaItem.SIZE_UNKNOWN
+            runOnUiThread { if (tab === currentTab) updateBadge() }
         }
     }
 
@@ -942,8 +962,11 @@ class MainActivity : AppCompatActivity() {
     inner class JsBridge(private val tab: Tab) {
         @JavascriptInterface
         fun onMediaFound(url: String) {
-            tab.sniffer.consider(url)
-            if (tab === currentTab) runOnUiThread { updateBadge() }
+            val found = tab.sniffer.consider(url)
+            if (found != null) {
+                fetchSize(found, tab)
+                if (tab === currentTab) runOnUiThread { updateBadge() }
+            }
         }
     }
 
