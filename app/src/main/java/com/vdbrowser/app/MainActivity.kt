@@ -859,11 +859,11 @@ class MainActivity : AppCompatActivity() {
         val handler = Handler(Looper.getMainLooper())
         val refresh = object : Runnable {
             override fun run() {
-                // Only show in-flight downloads; completed/canceled move to history.
+                // Only show in-flight downloads; finished ones (done/failed/
+                // canceled) move to history.
                 val statuses = Downloads.snapshot().filter {
                     it.state == Downloads.State.RUNNING ||
-                        it.state == Downloads.State.PAUSED ||
-                        it.state == Downloads.State.FAILED
+                        it.state == Downloads.State.PAUSED
                 }
                 empty.visibility = if (statuses.isEmpty()) View.VISIBLE else View.GONE
                 recycler.visibility = if (statuses.isEmpty()) View.GONE else View.VISIBLE
@@ -916,10 +916,17 @@ class MainActivity : AppCompatActivity() {
     /** Resolve a detected item's size in the background (drives the badge + filter). */
     private fun fetchSize(item: MediaItem, tab: Tab) {
         if (item.sizeBytes != MediaItem.SIZE_UNKNOWN) return
+        // Skip de-duplicated copies; only size the item that's actually shown.
+        if (!tab.sniffer.isRepresentative(item)) return
         item.sizeBytes = MediaItem.SIZE_FETCHING
-        SizeFetcher.fetch(item.url, tab.url, currentUa) { size ->
+        val onResult: (Long) -> Unit = { size ->
             item.sizeBytes = if (size > 0) size else MediaItem.SIZE_UNKNOWN
             runOnUiThread { if (tab === currentTab) updateBadge() }
+        }
+        if (item.isStream) {
+            HlsSize.estimate(item.url, tab.url, currentUa, onResult)
+        } else {
+            SizeFetcher.fetch(item.url, tab.url, currentUa, onResult)
         }
     }
 

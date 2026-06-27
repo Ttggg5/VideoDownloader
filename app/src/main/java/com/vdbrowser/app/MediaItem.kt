@@ -25,6 +25,9 @@ data class MediaItem(
     @Volatile
     var thumbRequested: Boolean = false
 
+    /** Detection order, used to keep the first item when de-duplicating. */
+    var order: Long = 0
+
     companion object {
         const val SIZE_UNKNOWN = -1L
         const val SIZE_FETCHING = -2L
