@@ -69,6 +69,14 @@ class MainActivity : AppCompatActivity() {
     @Volatile
     private var currentUa: String = ""
 
+    private val statusHandler = Handler(Looper.getMainLooper())
+    private val statusUpdater = object : Runnable {
+        override fun run() {
+            updateDownloadStatus()
+            statusHandler.postDelayed(this, 800)
+        }
+    }
+
     /** Receives the resolved href from a long-pressed link. */
     private val linkHandler = Handler(Looper.getMainLooper()) { msg ->
         val url = msg.data?.getString("url")
@@ -339,6 +347,7 @@ class MainActivity : AppCompatActivity() {
         }
         binding.btnTabs.setOnClickListener { showTabSwitcher() }
         binding.btnMenu.setOnClickListener { showOverflowMenu() }
+        binding.dlStatus.setOnClickListener { showDownloadsDialog() }
         setupFloatingDownloadButton()
 
         // Large screens (sw600dp) show a desktop-style tab strip on top.
@@ -508,11 +517,8 @@ class MainActivity : AppCompatActivity() {
             adapter = MediaAdapter(
                 items,
                 onClick = { item ->
-                    if (item.isStream) {
-                        Toast.makeText(this, R.string.stream_note, Toast.LENGTH_LONG).show()
-                    }
-                    DownloadHelper.enqueue(this, item, pageUrl, ua)
                     popup.dismiss()
+                    showRenameDialog(item, pageUrl, ua)
                 },
                 onNeedThumb = { item ->
                     ThumbnailLoader.load(item.url, pageUrl, ua) { bmp ->
@@ -572,6 +578,25 @@ class MainActivity : AppCompatActivity() {
         else fabLoc[1] + fab.height + margin
         popup.showAtLocation(binding.root, Gravity.NO_GRAVITY, x, y)
         dimBehind(popup)
+    }
+
+    /** Let the user rename the file, then start the download. */
+    private fun showRenameDialog(item: MediaItem, pageUrl: String?, ua: String?) {
+        val content = layoutInflater.inflate(R.layout.dialog_rename, null)
+        val input = content.findViewById<android.widget.EditText>(R.id.renameInput)
+        input.setText(DownloadHelper.defaultName(item))
+
+        AlertDialog.Builder(this)
+            .setTitle(R.string.rename_title)
+            .setView(content)
+            .setPositiveButton(R.string.download_action) { _, _ ->
+                if (item.isStream) {
+                    Toast.makeText(this, R.string.stream_note, Toast.LENGTH_LONG).show()
+                }
+                DownloadHelper.enqueue(this, item, pageUrl, ua, input.text.toString())
+            }
+            .setNegativeButton(R.string.cancel, null)
+            .show()
     }
 
     /** Dims the screen behind a popup window to draw attention to it. */
@@ -960,9 +985,35 @@ class MainActivity : AppCompatActivity() {
         intent.dataString?.let { addTabAndSelect(createTab(it)) }
     }
 
+    override fun onResume() {
+        super.onResume()
+        statusHandler.post(statusUpdater)
+    }
+
     override fun onPause() {
         super.onPause()
+        statusHandler.removeCallbacks(statusUpdater)
         CookieManager.getInstance().flush()
+    }
+
+    /** Reflect active downloads (count + progress) in the address bar. */
+    private fun updateDownloadStatus() {
+        val count = Downloads.inProgressCount()
+        if (count > 0) {
+            binding.dlStatus.visibility = View.VISIBLE
+            binding.dlCount.text = count.toString()
+            binding.dlProgress.setProgressCompat(Downloads.totalProgressPercent().coerceIn(0, 100), true)
+            if (binding.urlBar.paddingStart != dp(42)) {
+                binding.urlBar.setPaddingRelative(
+                    dp(42), binding.urlBar.paddingTop, binding.urlBar.paddingEnd, binding.urlBar.paddingBottom
+                )
+            }
+        } else if (binding.dlStatus.visibility != View.GONE) {
+            binding.dlStatus.visibility = View.GONE
+            binding.urlBar.setPaddingRelative(
+                dp(14), binding.urlBar.paddingTop, binding.urlBar.paddingEnd, binding.urlBar.paddingBottom
+            )
+        }
     }
 
     override fun onDestroy() {

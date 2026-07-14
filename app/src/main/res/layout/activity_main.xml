@@ -48,6 +48,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:background="@drawable/bg_urlbar"
+                    android:gravity="center_vertical"
                     android:paddingStart="14dp"
                     android:paddingEnd="44dp"
                     android:hint="@string/search_or_url"
@@ -57,6 +58,38 @@
                     android:selectAllOnFocus="true"
                     android:textSize="14sp"
                     android:autofillHints="" />
+
+                <FrameLayout
+                    android:id="@+id/dlStatus"
+                    android:layout_width="34dp"
+                    android:layout_height="34dp"
+                    android:layout_gravity="center_vertical|start"
+                    android:layout_marginStart="5dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:contentDescription="@string/downloads"
+                    android:visibility="gone">
+
+                    <com.google.android.material.progressindicator.CircularProgressIndicator
+                        android:id="@+id/dlProgress"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center"
+                        app:indicatorColor="@color/brand_primary"
+                        app:indicatorSize="30dp"
+                        app:trackThickness="3dp" />
+
+                    <TextView
+                        android:id="@+id/dlCount"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center"
+                        android:textColor="@color/brand_primary"
+                        android:textSize="11sp"
+                        android:textStyle="bold"
+                        tools:ignore="SmallSp" />
+                </FrameLayout>
 
                 <ImageButton
                     android:id="@+id/btnBookmark"

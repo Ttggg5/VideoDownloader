@@ -54,6 +54,9 @@ object Downloads {
 
     fun activeCount(): Int = items.count { it.state == State.RUNNING }
 
+    fun inProgressCount(): Int =
+        items.count { it.state == State.RUNNING || it.state == State.PAUSED }
+
     private fun find(id: Long): Item? = items.firstOrNull { it.id == id }
 
     fun pause(id: Long) = find(id)?.let {

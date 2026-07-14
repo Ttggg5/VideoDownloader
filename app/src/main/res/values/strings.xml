@@ -59,4 +59,7 @@
     <string name="opt_clear_data">Clear browsing data</string>
     <string name="size_off">Off</string>
     <string name="data_cleared">Browsing data cleared</string>
+    <string name="rename_title">Save as</string>
+    <string name="file_name_hint">File name</string>
+    <string name="download_action">Download</string>
 </resources>

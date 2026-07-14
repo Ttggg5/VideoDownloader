@@ -14,17 +14,29 @@ import androidx.core.content.ContextCompat
  */
 object DownloadHelper {
 
-    fun enqueue(context: Context, item: MediaItem, pageUrl: String?, userAgent: String?) {
+    /** The suggested file name shown in the rename dialog. */
+    fun defaultName(item: MediaItem): String =
+        sanitizeToExt(item.label, extFor(item))
+
+    /**
+     * @param fileName optional user-chosen name; the default is used when null.
+     */
+    fun enqueue(
+        context: Context,
+        item: MediaItem,
+        pageUrl: String?,
+        userAgent: String?,
+        fileName: String? = null
+    ) {
         try {
             // Adaptive streams are remuxed by FFmpeg into a single .mp4. Download
             // the specific variant we measured, so size and file match.
             val downloadUrl = if (item.isStream) item.downloadUrl ?: item.url else item.url
-            val fileName = if (item.isStream) sanitize(item.label, "mp4").replaceAfterLast('.', "mp4")
-            else sanitize(item.label, item.type)
+            val finalName = sanitizeToExt(fileName ?: item.label, extFor(item))
             val mime = if (item.isStream) "video/mp4" else mimeFor(item.type)
             val intent = Intent(context, DownloadService::class.java).apply {
                 putExtra(DownloadService.EX_URL, downloadUrl)
-                putExtra(DownloadService.EX_NAME, fileName)
+                putExtra(DownloadService.EX_NAME, finalName)
                 putExtra(DownloadService.EX_MIME, mime)
                 putExtra(DownloadService.EX_COOKIE, CookieManager.getInstance().getCookie(downloadUrl))
                 putExtra(DownloadService.EX_UA, userAgent)
@@ -34,7 +46,7 @@ object DownloadHelper {
             ContextCompat.startForegroundService(context, intent)
             Toast.makeText(
                 context,
-                context.getString(R.string.download_started, item.label),
+                context.getString(R.string.download_started, finalName),
                 Toast.LENGTH_SHORT
             ).show()
         } catch (e: Exception) {
@@ -46,13 +58,15 @@ object DownloadHelper {
         }
     }
 
+    private fun extFor(item: MediaItem): String = if (item.isStream) "mp4" else item.type
+
     private fun mimeFor(type: String): String? =
         MimeTypeMap.getSingleton().getMimeTypeFromExtension(type.lowercase())
 
-    private fun sanitize(label: String, type: String): String {
-        var name = label.substringBefore('?').replace(Regex("[^a-zA-Z0-9._-]"), "_")
-        if (name.isBlank()) name = "video_${System.currentTimeMillis()}.$type"
-        if (!name.contains('.')) name = "$name.$type"
+    private fun sanitizeToExt(rawName: String, ext: String): String {
+        var name = rawName.substringBefore('?').trim().replace(Regex("[^a-zA-Z0-9._-]"), "_")
+        if (name.isBlank()) name = "video_${System.currentTimeMillis()}"
+        if (!name.endsWith(".$ext", ignoreCase = true)) name = "$name.$ext"
         return name
     }
 }

@@ -59,4 +59,7 @@
     <string name="opt_clear_data">清除浏览数据</string>
     <string name="size_off">关闭</string>
     <string name="data_cleared">已清除浏览数据</string>
+    <string name="rename_title">另存为</string>
+    <string name="file_name_hint">文件名</string>
+    <string name="download_action">下载</string>
 </resources>

@@ -59,4 +59,7 @@
     <string name="opt_clear_data">清除瀏覽資料</string>
     <string name="size_off">關閉</string>
     <string name="data_cleared">已清除瀏覽資料</string>
+    <string name="rename_title">另存為</string>
+    <string name="file_name_hint">檔案名稱</string>
+    <string name="download_action">下載</string>
 </resources>
