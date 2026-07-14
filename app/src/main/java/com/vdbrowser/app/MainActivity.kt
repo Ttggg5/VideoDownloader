@@ -6,6 +6,7 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
+import android.content.res.Configuration
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.os.Build
@@ -55,6 +56,7 @@ class MainActivity : AppCompatActivity() {
 
     private var adBlockEnabled = true
     private var tabStripAdapter: TabStripAdapter? = null
+    private var isWide = false
 
     // User options (persisted in the "settings" SharedPreferences).
     private var minSizeBytes = 0L
@@ -102,12 +104,48 @@ class MainActivity : AppCompatActivity() {
         currentUa = if (desktopMode) DESKTOP_UA else mobileUa
         AdBlocker.init(applicationContext)
 
+        isWide = resources.getBoolean(R.bool.is_wide)
         requestNotificationPermissionIfNeeded()
         setupUi()
         setupBackNavigation()
 
         val initial = intent?.dataString ?: homeUrl
         addTabAndSelect(createTab(initial))
+    }
+
+    /**
+     * We handle configuration changes ourselves (see the manifest) so tabs and
+     * their WebViews survive. When the width crosses the sw600dp threshold we
+     * re-inflate the matching layout and re-attach the current tab, preserving
+     * all state.
+     */
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        val nowWide = resources.getBoolean(R.bool.is_wide)
+        if (nowWide != isWide) {
+            isWide = nowWide
+            rebindLayout()
+        }
+    }
+
+    private fun rebindLayout() {
+        val editing = binding.urlBar.hasFocus()
+        val pendingText = binding.urlBar.text?.toString()
+
+        // Detach the live WebView so it isn't destroyed with the old view tree.
+        (currentTab.webView.parent as? ViewGroup)?.removeView(currentTab.webView)
+
+        tabStripAdapter = null
+        binding = ActivityMainBinding.inflate(layoutInflater)
+        setContentView(binding.root)
+        setupUi()
+        selectTab(currentIndex)   // re-attaches the WebView and refreshes the bars
+        updateDownloadStatus()
+
+        if (editing) {
+            binding.urlBar.setText(pendingText)
+            binding.urlBar.requestFocus()
+        }
     }
 
     // ---------------------------------------------------------------- Tabs
