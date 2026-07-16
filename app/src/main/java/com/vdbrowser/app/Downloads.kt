@@ -57,6 +57,12 @@ object Downloads {
     fun inProgressCount(): Int =
         items.count { it.state == State.RUNNING || it.state == State.PAUSED }
 
+    /** False when at least one in-progress download has no known total (e.g. an
+     *  HLS merge whose size couldn't be estimated) — the caller should fall back
+     *  to an indeterminate progress indicator rather than a stuck-at-0% one. */
+    fun allInProgressHaveKnownTotal(): Boolean =
+        items.none { (it.state == State.RUNNING || it.state == State.PAUSED) && it.total <= 0 }
+
     private fun find(id: Long): Item? = items.firstOrNull { it.id == id }
 
     fun pause(id: Long) = find(id)?.let {

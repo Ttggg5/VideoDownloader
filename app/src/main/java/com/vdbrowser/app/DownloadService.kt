@@ -68,7 +68,8 @@ class DownloadService : Service() {
         )
 
         val isStream = intent.getBooleanExtra(EX_STREAM, false)
-        val item = Downloads.create(job.fileName, -1)
+        val sizeHint = intent.getLongExtra(EX_SIZE_HINT, -1L)
+        val item = Downloads.create(job.fileName, sizeHint)
         active.incrementAndGet()
         startForeground(NOTIF_ID, buildNotification())
         ensureUpdater()
@@ -211,6 +212,7 @@ class DownloadService : Service() {
         const val EX_UA = "ua"
         const val EX_REFERER = "referer"
         const val EX_STREAM = "stream"
+        const val EX_SIZE_HINT = "size_hint"
 
         const val ACTION_PAUSE = "com.vdbrowser.app.PAUSE"
         const val ACTION_RESUME = "com.vdbrowser.app.RESUME"

@@ -1038,9 +1038,19 @@ class MainActivity : AppCompatActivity() {
     private fun updateDownloadStatus() {
         val count = Downloads.inProgressCount()
         if (count > 0) {
-            binding.dlStatus.visibility = View.VISIBLE
+            val determinate = Downloads.allInProgressHaveKnownTotal()
+            if (binding.dlStatus.visibility != View.VISIBLE) {
+                // Material's indicator throws if switched to indeterminate while
+                // visible, so this must be decided before it first becomes visible.
+                binding.dlProgress.isIndeterminate = !determinate
+                binding.dlStatus.visibility = View.VISIBLE
+            }
             binding.dlCount.text = count.toString()
-            binding.dlProgress.setProgressCompat(Downloads.totalProgressPercent().coerceIn(0, 100), true)
+            if (determinate) {
+                // Switching to determinate while visible is always safe.
+                if (binding.dlProgress.isIndeterminate) binding.dlProgress.isIndeterminate = false
+                binding.dlProgress.setProgressCompat(Downloads.totalProgressPercent().coerceIn(0, 100), true)
+            }
             if (binding.urlBar.paddingStart != dp(42)) {
                 binding.urlBar.setPaddingRelative(
                     dp(42), binding.urlBar.paddingTop, binding.urlBar.paddingEnd, binding.urlBar.paddingBottom

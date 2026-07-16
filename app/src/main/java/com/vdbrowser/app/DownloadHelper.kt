@@ -42,6 +42,10 @@ object DownloadHelper {
                 putExtra(DownloadService.EX_UA, userAgent)
                 putExtra(DownloadService.EX_REFERER, pageUrl)
                 putExtra(DownloadService.EX_STREAM, item.isStream)
+                // Seed the progress total with the size already estimated for the
+                // popup, so the address-bar indicator can show real percentage
+                // instead of falling back to indeterminate for every HLS download.
+                if (item.sizeBytes > 0) putExtra(DownloadService.EX_SIZE_HINT, item.sizeBytes)
             }
             ContextCompat.startForegroundService(context, intent)
             Toast.makeText(
