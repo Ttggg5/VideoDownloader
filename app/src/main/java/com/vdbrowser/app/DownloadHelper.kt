@@ -67,10 +67,29 @@ object DownloadHelper {
     private fun mimeFor(type: String): String? =
         MimeTypeMap.getSingleton().getMimeTypeFromExtension(type.lowercase())
 
+    // Characters that are actually illegal in a file name on Android's storage
+    // (FAT/exFAT reserved chars + path separators + control chars). Everything
+    // else — CJK, Cyrillic, Arabic, accented Latin, emoji, etc. — is kept as-is;
+    // the previous ASCII-only filter replaced every such character with "_".
+    private val illegalChars = Regex("[\\\\/:*?\"<>|\\u0000-\\u001F]")
+
     private fun sanitizeToExt(rawName: String, ext: String): String {
-        var name = rawName.substringBefore('?').trim().replace(Regex("[^a-zA-Z0-9._-]"), "_")
+        var name = rawName.substringBefore('?').trim()
+            .replace(illegalChars, "_")
+            .trim(' ', '.') // trailing dots/spaces are stripped/rejected on some filesystems
         if (name.isBlank()) name = "video_${System.currentTimeMillis()}"
+        name = truncateToBytes(name, MAX_BASENAME_BYTES)
         if (!name.endsWith(".$ext", ignoreCase = true)) name = "$name.$ext"
         return name
     }
+
+    /** Trim to a UTF-8 byte budget without splitting a multi-byte character. */
+    private fun truncateToBytes(s: String, maxBytes: Int): String {
+        if (s.toByteArray(Charsets.UTF_8).size <= maxBytes) return s
+        var end = s.length
+        while (end > 0 && s.substring(0, end).toByteArray(Charsets.UTF_8).size > maxBytes) end--
+        return s.substring(0, end)
+    }
+
+    private const val MAX_BASENAME_BYTES = 180
 }
