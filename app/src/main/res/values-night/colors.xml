@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Dark-mode tones for the same names defined in values/colors.xml, so
+         DayNight resolves the right one automatically; overridden at runtime
+         by Material You dynamic color on Android 12+. -->
+    <color name="brand_primary">#A7C8FF</color>
+    <color name="brand_primary_dark">#00468A</color>
+
+    <color name="md_primary">#A7C8FF</color>
+    <color name="md_on_primary">#00315D</color>
+    <color name="md_primary_container">#00468A</color>
+    <color name="md_on_primary_container">#D3E3FD</color>
+
+    <color name="md_secondary">#BCC7DC</color>
+    <color name="md_on_secondary">#263141</color>
+    <color name="md_secondary_container">#3C4758</color>
+    <color name="md_on_secondary_container">#D8E3F8</color>
+
+    <color name="md_tertiary">#D8BEE4</color>
+    <color name="md_on_tertiary">#3B2947</color>
+    <color name="md_tertiary_container">#533F5E</color>
+    <color name="md_on_tertiary_container">#F4D9FF</color>
+
+    <color name="md_error">#FFB4AB</color>
+    <color name="md_on_error">#690005</color>
+    <color name="md_error_container">#93000A</color>
+    <color name="md_on_error_container">#FFDAD6</color>
+
+    <color name="md_background">#1A1C1E</color>
+    <color name="md_on_background">#E3E2E6</color>
+    <color name="md_surface">#1A1C1E</color>
+    <color name="md_on_surface">#E3E2E6</color>
+    <color name="md_surface_variant">#43474E</color>
+    <color name="md_on_surface_variant">#C3C7CF</color>
+
+    <color name="md_outline">#8D9199</color>
+    <color name="md_outline_variant">#43474E</color>
+
+    <color name="md_surface_container_lowest">#0F1113</color>
+    <color name="md_surface_container_low">#1A1C1E</color>
+    <color name="md_surface_container">#1E2022</color>
+    <color name="md_surface_container_high">#292B2D</color>
+    <color name="md_surface_container_highest">#343638</color>
+
+    <color name="md_inverse_surface">#E3E2E6</color>
+    <color name="md_inverse_on_surface">#2F3033</color>
+    <color name="md_inverse_primary">#1565C0</color>
+</resources>

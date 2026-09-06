@@ -21,14 +21,14 @@
             android:layout_marginEnd="10dp"
             android:contentDescription="@string/menu_history"
             android:src="@drawable/ic_history"
-            app:tint="@color/brand_primary" />
+            app:tint="?attr/colorPrimary" />
 
         <TextView
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="@string/menu_history"
-            android:textColor="@color/brand_primary"
+            android:textColor="?attr/colorPrimary"
             android:textSize="19sp"
             android:textStyle="bold" />
 
@@ -44,7 +44,7 @@
         android:layout_width="match_parent"
         android:layout_height="1dp"
         android:layout_marginBottom="4dp"
-        android:background="#22808080" />
+        android:background="?attr/colorOutlineVariant" />
 
     <LinearLayout
         android:id="@+id/historyEmpty"

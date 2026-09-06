@@ -22,7 +22,7 @@
             android:layout_marginEnd="10dp"
             android:contentDescription="@string/open_in_new_tab"
             android:src="@drawable/ic_public"
-            app:tint="@color/brand_primary" />
+            app:tint="?attr/colorPrimary" />
 
         <TextView
             android:id="@+id/linkUrl"
@@ -31,7 +31,7 @@
             android:layout_weight="1"
             android:ellipsize="middle"
             android:maxLines="2"
-            android:textColor="@color/brand_primary"
+            android:textColor="?attr/colorPrimary"
             android:textSize="14sp"
             android:textStyle="bold" />
     </LinearLayout>
@@ -40,7 +40,7 @@
         android:layout_width="match_parent"
         android:layout_height="1dp"
         android:layout_marginBottom="4dp"
-        android:background="#22808080" />
+        android:background="?attr/colorOutlineVariant" />
 
     <LinearLayout
         android:id="@+id/linkOpenNewTab"

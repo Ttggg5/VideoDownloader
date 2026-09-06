@@ -93,6 +93,10 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Adopt the system's Material You wallpaper-derived palette on Android 12+,
+        // same as Gmail/Photos/Chrome; no-ops gracefully on older versions, where
+        // the hand-tuned scheme in colors.xml / values-night/colors.xml applies.
+        com.google.android.material.color.DynamicColors.applyToActivityIfAvailable(this)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 

@@ -1,6 +1,54 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- Static launcher-icon colors; these must stay fixed regardless of theme
+         or Material You, since a shifting app icon color would be confusing. -->
     <color name="ic_launcher_background">#1565C0</color>
     <color name="brand_primary">#1565C0</color>
     <color name="brand_primary_dark">#0D47A1</color>
+
+    <!--
+      Material 3 color roles (light scheme), hand-tuned from the brand blue
+      seed. Used as the Theme.VideoDownloader baseline and overridden at
+      runtime by Material You dynamic color on Android 12+. Dark-mode values
+      for every one of these names are in values-night/colors.xml.
+    -->
+    <color name="md_primary">#1565C0</color>
+    <color name="md_on_primary">#FFFFFF</color>
+    <color name="md_primary_container">#D3E3FD</color>
+    <color name="md_on_primary_container">#001B3D</color>
+
+    <color name="md_secondary">#545F71</color>
+    <color name="md_on_secondary">#FFFFFF</color>
+    <color name="md_secondary_container">#D8E3F8</color>
+    <color name="md_on_secondary_container">#111C2B</color>
+
+    <color name="md_tertiary">#6C5677</color>
+    <color name="md_on_tertiary">#FFFFFF</color>
+    <color name="md_tertiary_container">#F4D9FF</color>
+    <color name="md_on_tertiary_container">#251431</color>
+
+    <color name="md_error">#BA1A1A</color>
+    <color name="md_on_error">#FFFFFF</color>
+    <color name="md_error_container">#FFDAD6</color>
+    <color name="md_on_error_container">#410002</color>
+
+    <color name="md_background">#FDFCFF</color>
+    <color name="md_on_background">#1A1C1E</color>
+    <color name="md_surface">#FDFCFF</color>
+    <color name="md_on_surface">#1A1C1E</color>
+    <color name="md_surface_variant">#DFE2EB</color>
+    <color name="md_on_surface_variant">#43474E</color>
+
+    <color name="md_outline">#73777F</color>
+    <color name="md_outline_variant">#C3C7CF</color>
+
+    <color name="md_surface_container_lowest">#FFFFFF</color>
+    <color name="md_surface_container_low">#F7F7FA</color>
+    <color name="md_surface_container">#F1F1F4</color>
+    <color name="md_surface_container_high">#EBECEF</color>
+    <color name="md_surface_container_highest">#E5E6E9</color>
+
+    <color name="md_inverse_surface">#2F3033</color>
+    <color name="md_inverse_on_surface">#F1F0F4</color>
+    <color name="md_inverse_primary">#A7C8FF</color>
 </resources>

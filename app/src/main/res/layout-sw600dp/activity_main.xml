@@ -103,7 +103,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_gravity="center"
-                        app:indicatorColor="@color/brand_primary"
+                        app:indicatorColor="?attr/colorPrimary"
                         app:indicatorSize="30dp"
                         app:trackThickness="3dp" />
 
@@ -112,7 +112,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_gravity="center"
-                        android:textColor="@color/brand_primary"
+                        android:textColor="?attr/colorPrimary"
                         android:textSize="11sp"
                         android:textStyle="bold"
                         tools:ignore="SmallSp" />
@@ -169,8 +169,8 @@
             android:layout_height="3dp"
             android:max="100"
             android:progress="0"
-            android:progressTint="@color/brand_primary"
-            android:indeterminateTint="@color/brand_primary"
+            android:progressTint="?attr/colorPrimary"
+            android:indeterminateTint="?attr/colorPrimary"
             android:visibility="gone" />
 
         <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
@@ -201,7 +201,7 @@
             android:layout_marginTop="8dp"
             android:layout_marginEnd="8dp"
             android:contentDescription="@string/downloads"
-            app:backgroundTint="@color/brand_primary"
+            app:backgroundTint="?attr/colorPrimary"
             app:fabCustomSize="68dp"
             app:maxImageSize="34dp"
             app:shapeAppearanceOverlay="@style/ShapeAppearanceOverlay.Fab.Circle"
@@ -216,7 +216,7 @@
             android:background="@drawable/bg_badge"
             android:elevation="16dp"
             android:gravity="center"
-            android:textColor="#FFFFFF"
+            android:textColor="?attr/colorOnError"
             android:textSize="11sp"
             android:textStyle="bold"
             android:visibility="gone"
