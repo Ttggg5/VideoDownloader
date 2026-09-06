@@ -37,6 +37,8 @@
     <string name="bookmark_removed">Bookmark removed</string>
     <string name="menu_history">Download history</string>
     <string name="no_history">No downloads yet.</string>
+    <string name="menu_history_pages">Browsing history</string>
+    <string name="no_page_history">No pages visited yet.</string>
     <string name="clear">Clear</string>
     <string name="pause">Pause</string>
     <string name="resume">Resume</string>

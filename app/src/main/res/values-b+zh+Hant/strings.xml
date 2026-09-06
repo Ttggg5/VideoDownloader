@@ -37,6 +37,8 @@
     <string name="bookmark_removed">已移除書籤</string>
     <string name="menu_history">下載紀錄</string>
     <string name="no_history">尚無下載。</string>
+    <string name="menu_history_pages">瀏覽紀錄</string>
+    <string name="no_page_history">尚無瀏覽紀錄。</string>
     <string name="clear">清除</string>
     <string name="pause">暫停</string>
     <string name="resume">繼續</string>

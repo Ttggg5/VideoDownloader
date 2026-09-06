@@ -37,6 +37,8 @@
     <string name="bookmark_removed">已移除书签</string>
     <string name="menu_history">下载历史</string>
     <string name="no_history">暂无下载。</string>
+    <string name="menu_history_pages">浏览记录</string>
+    <string name="no_page_history">暂无浏览记录。</string>
     <string name="clear">清除</string>
     <string name="pause">暂停</string>
     <string name="resume">继续</string>

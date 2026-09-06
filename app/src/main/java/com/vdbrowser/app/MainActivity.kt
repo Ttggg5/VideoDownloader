@@ -109,7 +109,7 @@ class MainActivity : AppCompatActivity() {
         setupUi()
         setupBackNavigation()
 
-        val initial = intent?.dataString ?: homeUrl
+        val initial = resolveInitialUrl(intent) ?: homeUrl
         addTabAndSelect(createTab(initial))
     }
 
@@ -281,6 +281,7 @@ class MainActivity : AppCompatActivity() {
                     updateBookmarkIcon()
                 }
                 refreshTabStrip()
+                BrowsingHistory.record(this@MainActivity, view?.title ?: tab.title, tab.url)
             }
 
             override fun shouldInterceptRequest(
@@ -478,15 +479,37 @@ class MainActivity : AppCompatActivity() {
     private fun navigate(input: String) {
         val raw = input.trim()
         if (raw.isEmpty()) return
+        currentTab.webView.loadUrl(resolveInput(raw))
+        hideKeyboard()
+        binding.urlBar.clearFocus()
+    }
+
+    /** Turn raw address-bar (or shared) text into a loadable URL: as-is if it's
+     *  already a URL, schemed if it looks like a bare domain, else a search. */
+    private fun resolveInput(raw: String): String {
         val looksLikeUrl = raw.contains(".") && !raw.contains(" ")
-        val url = when {
+        return when {
             raw.startsWith("http://") || raw.startsWith("https://") -> raw
             looksLikeUrl -> "https://$raw"
             else -> searchUrl(raw)
         }
-        currentTab.webView.loadUrl(url)
-        hideKeyboard()
-        binding.urlBar.clearFocus()
+    }
+
+    /** The URL to open for a launch/share intent, or null if it carries none. */
+    private fun resolveInitialUrl(intent: Intent?): String? {
+        intent ?: return null
+        intent.dataString?.let { return it }
+        if (intent.action == Intent.ACTION_SEND && intent.type?.startsWith("text/") == true) {
+            val text = intent.getStringExtra(Intent.EXTRA_TEXT)?.trim().orEmpty()
+            if (text.isEmpty()) return null
+            // A share can carry a bare link or a sentence with a link buried in it
+            // ("check this out: https://..."); pull just the URL out when present,
+            // otherwise treat the whole text as a search query.
+            val matcher = android.util.Patterns.WEB_URL.matcher(text)
+            val urlPart = if (matcher.find()) text.substring(matcher.start(), matcher.end()) else text
+            return resolveInput(urlPart)
+        }
+        return null
     }
 
     private fun searchUrl(query: String): String {
@@ -694,6 +717,7 @@ class MainActivity : AppCompatActivity() {
                 R.id.menu_new_tab -> { addTabAndSelect(createTab(homeUrl)); true }
                 R.id.menu_refresh -> { currentTab.webView.reload(); true }
                 R.id.menu_bookmarks -> { showBookmarks(); true }
+                R.id.menu_history_pages -> { showBrowsingHistory(); true }
                 R.id.menu_downloads -> { showDownloadsDialog(); true }
                 R.id.menu_history -> { showHistory(); true }
                 R.id.menu_options -> { showOptions(); true }
@@ -736,6 +760,39 @@ class MainActivity : AppCompatActivity() {
                 onOpen = { item -> currentTab.webView.loadUrl(item.url); sheet.dismiss() },
                 onDelete = { item -> Bookmarks.remove(this, item.url) }
             )
+        }
+        sheet.show()
+    }
+
+    private fun showBrowsingHistory() {
+        val sheet = BottomSheetDialog(this)
+        val content = layoutInflater.inflate(R.layout.sheet_browsing_history, null)
+        sheet.setContentView(content)
+
+        val recycler = content.findViewById<RecyclerView>(R.id.pageHistoryList)
+        val empty = content.findViewById<View>(R.id.pageHistoryEmpty)
+        val clear = content.findViewById<View>(R.id.btnClearPageHistory)
+        val items = BrowsingHistory.all(this)
+
+        fun render(list: MutableList<BrowsingHistory.Entry>) {
+            if (list.isEmpty()) {
+                recycler.visibility = View.GONE
+                empty.visibility = View.VISIBLE
+            } else {
+                recycler.visibility = View.VISIBLE
+                empty.visibility = View.GONE
+                recycler.layoutManager = LinearLayoutManager(this)
+                recycler.adapter = BrowsingHistoryAdapter(
+                    list,
+                    onOpen = { entry -> currentTab.webView.loadUrl(entry.url); sheet.dismiss() },
+                    onDelete = { entry -> BrowsingHistory.remove(this, entry.url) }
+                )
+            }
+        }
+        render(items)
+        clear.setOnClickListener {
+            BrowsingHistory.clear(this)
+            render(mutableListOf())
         }
         sheet.show()
     }
@@ -1020,7 +1077,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
-        intent.dataString?.let { addTabAndSelect(createTab(it)) }
+        resolveInitialUrl(intent)?.let { addTabAndSelect(createTab(it)) }
     }
 
     override fun onResume() {
