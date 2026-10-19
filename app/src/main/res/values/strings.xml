@@ -64,4 +64,6 @@
     <string name="rename_title">Save as</string>
     <string name="file_name_hint">File name</string>
     <string name="download_action">Download</string>
+    <string name="opt_section_browsing">Browsing</string>
+    <string name="opt_section_general">General</string>
 </resources>

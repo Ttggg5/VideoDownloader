@@ -64,4 +64,6 @@
     <string name="rename_title">另存为</string>
     <string name="file_name_hint">文件名</string>
     <string name="download_action">下载</string>
+    <string name="opt_section_browsing">浏览</string>
+    <string name="opt_section_general">通用</string>
 </resources>
