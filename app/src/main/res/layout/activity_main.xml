@@ -12,18 +12,30 @@
         android:layout_height="match_parent"
         android:orientation="vertical">
 
-        <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
-            android:id="@+id/swipeRefresh"
+        <FrameLayout
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_weight="1">
 
-            <FrameLayout
-                android:id="@+id/webContainer"
+            <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+                android:id="@+id/swipeRefresh"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent">
+
+                <FrameLayout
+                    android:id="@+id/webContainer"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="?android:attr/colorBackground" />
+            </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
+
+            <include
+                android:id="@+id/startPage"
+                layout="@layout/view_start_page"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:background="?android:attr/colorBackground" />
-        </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
+                android:visibility="gone" />
+        </FrameLayout>
 
         <!-- Bottom bar: address pill on top, navigation row underneath -->
         <FrameLayout

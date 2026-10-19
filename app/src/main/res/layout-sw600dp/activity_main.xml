@@ -203,6 +203,13 @@
                     android:background="?android:attr/colorBackground" />
             </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 
+            <include
+                android:id="@+id/startPage"
+                layout="@layout/view_start_page"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:visibility="gone" />
+
             <com.google.android.material.progressindicator.LinearProgressIndicator
                 android:id="@+id/progressBar"
                 android:layout_width="match_parent"

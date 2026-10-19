@@ -174,6 +174,23 @@ class MainActivity : AppCompatActivity() {
         selectTab(tabs.size - 1)
     }
 
+    /** A blank tab that shows the start page until it navigates somewhere. */
+    private fun openNewTab() {
+        addTabAndSelect(createTab(null).also { it.showingStart = true })
+    }
+
+    private fun updateStartPage() {
+        val page = binding.startPage
+        val show = currentTab.showingStart
+        page.root.visibility = if (show) View.VISIBLE else View.GONE
+        if (!show) return
+        val items = Bookmarks.all(this)
+        page.startEmpty.visibility = if (items.isEmpty()) View.VISIBLE else View.GONE
+        page.startTiles.layoutManager =
+            androidx.recyclerview.widget.GridLayoutManager(this, if (isWide) 6 else 4)
+        page.startTiles.adapter = StartTileAdapter(items) { item -> navigate(item.url) }
+    }
+
     private fun selectTab(index: Int) {
         if (index !in tabs.indices) return
         tabs.firstOrNull { it.webView.parent === binding.webContainer }?.let { capturePreview(it) }
@@ -188,10 +205,12 @@ class MainActivity : AppCompatActivity() {
         updateNavButtons()
         updateTabCount()
         updateBookmarkIcon()
+        updateStartPage()
     }
 
     /** Snapshot the visible part of a tab's page at reduced size for the tab grid. */
     private fun capturePreview(tab: Tab) {
+        if (tab.showingStart) { tab.preview = null; return }
         val web = tab.webView
         if (web.width <= 0 || web.height <= 0 || !web.isAttachedToWindow) return
         val scale = 0.4f
@@ -214,7 +233,7 @@ class MainActivity : AppCompatActivity() {
         tab.webView.destroy()
 
         if (tabs.isEmpty()) {
-            addTabAndSelect(createTab(homeUrl))
+            openNewTab()
             return
         }
         val target = if (index < currentIndex) currentIndex - 1
@@ -285,6 +304,10 @@ class MainActivity : AppCompatActivity() {
                 tab.sniffer.clear()
                 tab.url = url ?: ""
                 tab.favicon = null
+                if (tab.showingStart) {
+                    tab.showingStart = false
+                    if (tab === currentTab) updateStartPage()
+                }
                 if (tab === currentTab) {
                     if (!binding.urlBar.hasFocus()) binding.urlBar.setText(url)
                     updateBadge()
@@ -408,6 +431,11 @@ class MainActivity : AppCompatActivity() {
         binding.btnTabs.setOnClickListener { showTabSwitcher() }
         binding.btnMenu.setOnClickListener { showOverflowMenu() }
         binding.dlStatus.setOnClickListener { showDownloadsDialog() }
+        binding.startPage.startSearch.setOnClickListener {
+            binding.urlBar.requestFocus()
+            (getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager)
+                .showSoftInput(binding.urlBar, InputMethodManager.SHOW_IMPLICIT)
+        }
         setupFloatingDownloadButton()
 
         // Large screens (sw600dp) show a desktop-style tab strip on top.
@@ -423,7 +451,7 @@ class MainActivity : AppCompatActivity() {
             strip.adapter = tabStripAdapter
         }
         binding.btnNewTabStrip?.setOnClickListener {
-            addTabAndSelect(createTab(homeUrl))
+            openNewTab()
         }
 
         binding.swipeRefresh.setOnRefreshListener {
@@ -500,6 +528,10 @@ class MainActivity : AppCompatActivity() {
     private fun navigate(input: String) {
         val raw = input.trim()
         if (raw.isEmpty()) return
+        if (currentTab.showingStart) {
+            currentTab.showingStart = false
+            updateStartPage()
+        }
         currentTab.webView.loadUrl(resolveInput(raw))
         hideKeyboard()
         binding.urlBar.clearFocus()
@@ -727,7 +759,7 @@ class MainActivity : AppCompatActivity() {
         refreshHeader()
 
         content.findViewById<View>(R.id.btnNewTab).setOnClickListener {
-            addTabAndSelect(createTab(homeUrl))
+            openNewTab()
             sheet.dismiss()
         }
         sheet.show()
@@ -745,7 +777,7 @@ class MainActivity : AppCompatActivity() {
         fun action(id: Int, block: () -> Unit) {
             content.findViewById<View>(id).setOnClickListener { sheet.dismiss(); block() }
         }
-        action(R.id.menuNewTab) { addTabAndSelect(createTab(homeUrl)) }
+        action(R.id.menuNewTab) { openNewTab() }
         action(R.id.menuBookmarks) { showBookmarks() }
         action(R.id.menuHistoryPages) { showBrowsingHistory() }
         action(R.id.menuDownloads) { showDownloadsDialog() }
@@ -790,6 +822,7 @@ class MainActivity : AppCompatActivity() {
                 onDelete = { item -> Bookmarks.remove(this, item.url) }
             )
         }
+        sheet.setOnDismissListener { updateStartPage() }
         sheet.show()
     }
 

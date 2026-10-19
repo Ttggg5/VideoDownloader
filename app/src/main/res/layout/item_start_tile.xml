@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="?attr/selectableItemBackgroundBorderless"
+    android:gravity="center_horizontal"
+    android:orientation="vertical"
+    android:paddingHorizontal="4dp"
+    android:paddingVertical="10dp">
+
+    <ImageView
+        android:id="@+id/startTileIcon"
+        android:layout_width="56dp"
+        android:layout_height="56dp"
+        android:background="@drawable/bg_icon_circle"
+        android:contentDescription="@null"
+        android:padding="15dp"
+        android:scaleType="fitCenter"
+        android:src="@drawable/ic_public" />
+
+    <TextView
+        android:id="@+id/startTileLabel"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:ellipsize="end"
+        android:gravity="center"
+        android:maxLines="1"
+        android:textAppearance="?attr/textAppearanceBodySmall"
+        android:textColor="?attr/colorOnSurface" />
+</LinearLayout>

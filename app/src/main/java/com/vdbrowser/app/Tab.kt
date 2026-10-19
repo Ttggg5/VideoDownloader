@@ -12,4 +12,6 @@ class Tab(val webView: WebView) {
     var url: String = ""
     var favicon: android.graphics.Bitmap? = null
     var preview: android.graphics.Bitmap? = null
+    /** True for a fresh "New tab" until it loads its first page. */
+    var showingStart: Boolean = false
 }
