@@ -243,6 +243,48 @@
         <item name="android:textColor">?attr/colorOnSurfaceVariant</item>
     </style>
 
+    <!-- Menu sheet -->
+    <style name="MenuTile">
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_weight">1</item>
+        <item name="android:orientation">vertical</item>
+        <item name="android:gravity">center_horizontal</item>
+        <item name="android:paddingVertical">8dp</item>
+        <item name="android:paddingHorizontal">4dp</item>
+        <item name="android:background">?attr/selectableItemBackgroundBorderless</item>
+        <item name="android:clickable">true</item>
+        <item name="android:focusable">true</item>
+    </style>
+
+    <style name="MenuTileIcon">
+        <item name="android:layout_width">64dp</item>
+        <item name="android:layout_height">56dp</item>
+        <item name="android:background">@drawable/bg_menu_tile</item>
+        <item name="android:padding">16dp</item>
+        <item name="android:contentDescription">@null</item>
+        <item name="tint">?attr/colorOnSecondaryContainer</item>
+    </style>
+
+    <style name="MenuTileLabel">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_marginTop">8dp</item>
+        <item name="android:gravity">center</item>
+        <item name="android:maxLines">2</item>
+        <item name="android:ellipsize">end</item>
+        <item name="android:textAppearance">?attr/textAppearanceLabelMedium</item>
+        <item name="android:textColor">?attr/colorOnSurface</item>
+    </style>
+
+    <style name="MenuRowIcon">
+        <item name="android:layout_width">24dp</item>
+        <item name="android:layout_height">24dp</item>
+        <item name="android:layout_marginEnd">20dp</item>
+        <item name="android:contentDescription">@null</item>
+        <item name="tint">?attr/colorOnSurfaceVariant</item>
+    </style>
+
     <!-- Bottom bar navigation buttons -->
     <style name="NavButton">
         <item name="android:layout_width">0dp</item>

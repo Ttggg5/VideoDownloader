@@ -31,7 +31,6 @@ import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.FrameLayout
-import android.widget.PopupMenu
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
@@ -713,22 +712,26 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showOverflowMenu() {
-        val popup = PopupMenu(this, binding.btnMenu)
-        popup.menuInflater.inflate(R.menu.overflow_menu, popup.menu)
-        forceMenuIcons(popup)
-        popup.setOnMenuItemClickListener { item ->
-            when (item.itemId) {
-                R.id.menu_new_tab -> { addTabAndSelect(createTab(homeUrl)); true }
-                R.id.menu_refresh -> { currentTab.webView.reload(); true }
-                R.id.menu_bookmarks -> { showBookmarks(); true }
-                R.id.menu_history_pages -> { showBrowsingHistory(); true }
-                R.id.menu_downloads -> { showDownloadsDialog(); true }
-                R.id.menu_history -> { showHistory(); true }
-                R.id.menu_options -> { showOptions(); true }
-                else -> false
-            }
+        val sheet = BottomSheetDialog(this)
+        val content = layoutInflater.inflate(R.layout.sheet_menu, null)
+        sheet.setContentView(content)
+
+        content.findViewById<android.widget.ImageView>(R.id.menuBookmarkAddIcon).setImageResource(
+            if (Bookmarks.isBookmarked(this, currentTab.url)) R.drawable.ic_star else R.drawable.ic_star_border
+        )
+
+        fun action(id: Int, block: () -> Unit) {
+            content.findViewById<View>(id).setOnClickListener { sheet.dismiss(); block() }
         }
-        popup.show()
+        action(R.id.menuNewTab) { addTabAndSelect(createTab(homeUrl)) }
+        action(R.id.menuBookmarks) { showBookmarks() }
+        action(R.id.menuHistoryPages) { showBrowsingHistory() }
+        action(R.id.menuDownloads) { showDownloadsDialog() }
+        action(R.id.menuRefresh) { currentTab.webView.reload() }
+        action(R.id.menuBookmarkAdd) { toggleBookmark(); updateBookmarkIcon() }
+        action(R.id.menuHistory) { showHistory() }
+        action(R.id.menuOptions) { showOptions() }
+        sheet.show()
     }
 
     private fun toggleBookmark() {
@@ -799,18 +802,6 @@ class MainActivity : AppCompatActivity() {
             render(mutableListOf())
         }
         sheet.show()
-    }
-
-    /** Force a PopupMenu to render item icons (hidden by default). */
-    private fun forceMenuIcons(popup: PopupMenu) {
-        runCatching {
-            val field = popup.javaClass.getDeclaredField("mPopup")
-            field.isAccessible = true
-            val helper = field.get(popup)
-            helper.javaClass
-                .getDeclaredMethod("setForceShowIcon", Boolean::class.javaPrimitiveType)
-                .invoke(helper, true)
-        }
     }
 
     private fun prefs() = getSharedPreferences("settings", MODE_PRIVATE)
