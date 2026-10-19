@@ -1,6 +1,5 @@
 package com.vdbrowser.app
 
-import android.graphics.Color
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -8,6 +7,7 @@ import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.color.MaterialColors
 
 /**
  * Horizontal desktop-style tab strip shown on top on large screens. Each chip
@@ -43,7 +43,11 @@ class TabStripAdapter(
         holder.itemView.setBackgroundResource(
             if (active) R.drawable.bg_tab_chip_active else R.drawable.bg_tab_chip
         )
-        val textColor = if (active) Color.WHITE else 0xFF888888.toInt()
+        val textColor = MaterialColors.getColor(
+            holder.itemView,
+            if (active) com.google.android.material.R.attr.colorOnSecondaryContainer
+            else com.google.android.material.R.attr.colorOnSurfaceVariant
+        )
         holder.title.setTextColor(textColor)
         holder.close.setColorFilter(textColor)
 

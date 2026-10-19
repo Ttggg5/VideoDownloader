@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Keeps the download FAB clear of the bottom bar on phones -->
+    <dimen name="fab_bottom_offset">124dp</dimen>
+    <dimen name="tab_preview_height">200dp</dimen>
+</resources>

@@ -4,146 +4,13 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="?attr/colorSurfaceContainer"
     android:fitsSystemWindows="true">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical">
-
-        <!-- Toolbar: back + address bar (with bookmark star) + tabs + menu -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:background="?attr/colorSurface"
-            android:paddingHorizontal="4dp"
-            android:paddingVertical="6dp">
-
-            <ImageButton
-                android:id="@+id/btnBack"
-                android:layout_width="40dp"
-                android:layout_height="44dp"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:contentDescription="@string/back"
-                android:src="@drawable/ic_back" />
-
-            <ImageButton
-                android:id="@+id/btnForward"
-                android:layout_width="40dp"
-                android:layout_height="44dp"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:contentDescription="@string/forward"
-                android:src="@drawable/ic_forward" />
-
-            <FrameLayout
-                android:layout_width="0dp"
-                android:layout_height="44dp"
-                android:layout_weight="1"
-                android:layout_marginHorizontal="2dp">
-
-                <EditText
-                    android:id="@+id/urlBar"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:background="@drawable/bg_urlbar"
-                    android:gravity="center_vertical"
-                    android:paddingStart="14dp"
-                    android:paddingEnd="44dp"
-                    android:hint="@string/search_or_url"
-                    android:imeOptions="actionGo"
-                    android:inputType="textUri"
-                    android:maxLines="1"
-                    android:selectAllOnFocus="true"
-                    android:textSize="14sp"
-                    android:autofillHints="" />
-
-                <FrameLayout
-                    android:id="@+id/dlStatus"
-                    android:layout_width="34dp"
-                    android:layout_height="34dp"
-                    android:layout_gravity="center_vertical|start"
-                    android:layout_marginStart="5dp"
-                    android:background="?attr/selectableItemBackgroundBorderless"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:contentDescription="@string/downloads"
-                    android:visibility="gone">
-
-                    <com.google.android.material.progressindicator.CircularProgressIndicator
-                        android:id="@+id/dlProgress"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_gravity="center"
-                        app:indicatorColor="?attr/colorPrimary"
-                        app:indicatorSize="30dp"
-                        app:trackThickness="3dp" />
-
-                    <TextView
-                        android:id="@+id/dlCount"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_gravity="center"
-                        android:textColor="?attr/colorPrimary"
-                        android:textSize="11sp"
-                        android:textStyle="bold"
-                        tools:ignore="SmallSp" />
-                </FrameLayout>
-
-                <ImageButton
-                    android:id="@+id/btnBookmark"
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
-                    android:layout_gravity="center_vertical|end"
-                    android:layout_marginEnd="2dp"
-                    android:background="?attr/selectableItemBackgroundBorderless"
-                    android:contentDescription="@string/menu_bookmark_add"
-                    android:src="@drawable/ic_star_border" />
-            </FrameLayout>
-
-            <!-- Tab switcher button: square outline with the tab count -->
-            <FrameLayout
-                android:id="@+id/btnTabs"
-                android:layout_width="44dp"
-                android:layout_height="44dp"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:clickable="true"
-                android:focusable="true"
-                android:contentDescription="@string/tabs">
-
-                <TextView
-                    android:id="@+id/tabCount"
-                    android:layout_width="22dp"
-                    android:layout_height="22dp"
-                    android:layout_gravity="center"
-                    android:background="@drawable/bg_tab_count"
-                    android:gravity="center"
-                    android:text="1"
-                    android:textSize="12sp"
-                    android:textStyle="bold"
-                    tools:ignore="HardcodedText" />
-            </FrameLayout>
-
-            <ImageButton
-                android:id="@+id/btnMenu"
-                android:layout_width="40dp"
-                android:layout_height="44dp"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:contentDescription="@string/menu"
-                android:src="@drawable/ic_more" />
-        </LinearLayout>
-
-        <ProgressBar
-            android:id="@+id/progressBar"
-            style="?android:attr/progressBarStyleHorizontal"
-            android:layout_width="match_parent"
-            android:layout_height="3dp"
-            android:max="100"
-            android:progress="0"
-            android:progressTint="?attr/colorPrimary"
-            android:indeterminateTint="?attr/colorPrimary"
-            android:visibility="gone" />
 
         <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
             android:id="@+id/swipeRefresh"
@@ -154,8 +21,170 @@
             <FrameLayout
                 android:id="@+id/webContainer"
                 android:layout_width="match_parent"
-                android:layout_height="match_parent" />
+                android:layout_height="match_parent"
+                android:background="?android:attr/colorBackground" />
         </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
+
+        <!-- Bottom bar: address pill on top, navigation row underneath -->
+        <FrameLayout
+            android:id="@+id/bottomBar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="?attr/colorSurfaceContainer">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:paddingTop="10dp">
+
+                <LinearLayout
+                    android:id="@+id/urlPill"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:layout_marginHorizontal="12dp"
+                    android:background="@drawable/bg_urlbar"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingStart="6dp"
+                    android:paddingEnd="4dp">
+
+                    <FrameLayout
+                        android:layout_width="40dp"
+                        android:layout_height="40dp">
+
+                        <ImageView
+                            android:id="@+id/urlLeadingIcon"
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:layout_gravity="center"
+                            android:contentDescription="@null"
+                            android:src="@drawable/ic_search"
+                            app:tint="?attr/colorOnSurfaceVariant" />
+
+                        <FrameLayout
+                            android:id="@+id/dlStatus"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:background="?attr/selectableItemBackgroundBorderless"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:contentDescription="@string/downloads"
+                            android:visibility="gone">
+
+                            <com.google.android.material.progressindicator.CircularProgressIndicator
+                                android:id="@+id/dlProgress"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_gravity="center"
+                                app:indicatorColor="?attr/colorPrimary"
+                                app:trackColor="?attr/colorSecondaryContainer"
+                                app:indicatorSize="32dp"
+                                app:trackThickness="3dp" />
+
+                            <TextView
+                                android:id="@+id/dlCount"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_gravity="center"
+                                android:textAppearance="?attr/textAppearanceLabelMedium"
+                                android:textColor="?attr/colorPrimary"
+                                android:textStyle="bold" />
+                        </FrameLayout>
+                    </FrameLayout>
+
+                    <EditText
+                        android:id="@+id/urlBar"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"
+                        android:background="@null"
+                        android:gravity="center_vertical"
+                        android:paddingHorizontal="6dp"
+                        android:hint="@string/search_or_url"
+                        android:imeOptions="actionGo"
+                        android:inputType="textUri"
+                        android:maxLines="1"
+                        android:selectAllOnFocus="true"
+                        android:textAppearance="?attr/textAppearanceBodyLarge"
+                        android:textColor="?attr/colorOnSurface"
+                        android:textColorHint="?attr/colorOnSurfaceVariant"
+                        android:autofillHints="" />
+
+                    <ImageButton
+                        android:id="@+id/btnBookmark"
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:contentDescription="@string/menu_bookmark_add"
+                        android:src="@drawable/ic_star_border"
+                        app:tint="?attr/colorOnSurfaceVariant" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:paddingHorizontal="8dp"
+                    android:paddingVertical="4dp">
+
+                    <ImageButton
+                        android:id="@+id/btnBack"
+                        style="@style/NavButton"
+                        android:contentDescription="@string/back"
+                        android:src="@drawable/ic_back" />
+
+                    <ImageButton
+                        android:id="@+id/btnForward"
+                        style="@style/NavButton"
+                        android:contentDescription="@string/forward"
+                        android:src="@drawable/ic_forward" />
+
+                    <FrameLayout
+                        android:id="@+id/btnTabs"
+                        android:layout_width="0dp"
+                        android:layout_height="48dp"
+                        android:layout_weight="1"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:contentDescription="@string/tabs">
+
+                        <TextView
+                            android:id="@+id/tabCount"
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:layout_gravity="center"
+                            android:background="@drawable/bg_tab_count"
+                            android:gravity="center"
+                            android:text="1"
+                            android:textAppearance="?attr/textAppearanceLabelMedium"
+                            android:textColor="?attr/colorOnSurfaceVariant"
+                            android:textStyle="bold"
+                            tools:ignore="HardcodedText" />
+                    </FrameLayout>
+
+                    <ImageButton
+                        android:id="@+id/btnMenu"
+                        style="@style/NavButton"
+                        android:contentDescription="@string/menu"
+                        android:src="@drawable/ic_more" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- Page-load progress rides the top edge of the bar -->
+            <com.google.android.material.progressindicator.LinearProgressIndicator
+                android:id="@+id/progressBar"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_gravity="top"
+                android:max="100"
+                android:visibility="gone"
+                app:indicatorColor="?attr/colorPrimary"
+                app:trackColor="@android:color/transparent"
+                app:trackThickness="3dp" />
+        </FrameLayout>
     </LinearLayout>
 
     <!-- Draggable floating download button with a count badge -->
@@ -164,7 +193,8 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
-        android:layout_margin="16dp">
+        android:layout_marginEnd="12dp"
+        android:layout_marginBottom="@dimen/fab_bottom_offset">
 
         <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:id="@+id/btnDownloads"
@@ -178,20 +208,21 @@
             app:maxImageSize="34dp"
             app:shapeAppearanceOverlay="@style/ShapeAppearanceOverlay.Fab.Circle"
             app:srcCompat="@drawable/ic_download"
-            app:tint="@android:color/white" />
+            app:tint="?attr/colorOnPrimary" />
 
         <TextView
             android:id="@+id/downloadBadge"
-            android:layout_width="20dp"
+            android:layout_width="wrap_content"
             android:layout_height="20dp"
             android:layout_gravity="top|end"
+            android:minWidth="20dp"
+            android:paddingHorizontal="5dp"
             android:background="@drawable/bg_badge"
             android:elevation="16dp"
             android:gravity="center"
+            android:textAppearance="?attr/textAppearanceLabelSmall"
             android:textColor="?attr/colorOnError"
-            android:textSize="11sp"
             android:textStyle="bold"
-            android:visibility="gone"
-            tools:ignore="SmallSp" />
+            android:visibility="gone" />
     </FrameLayout>
 </FrameLayout>

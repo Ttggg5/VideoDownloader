@@ -1061,8 +1061,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun updateNavButtons() {
-        binding.btnBack.alpha = if (currentTab.webView.canGoBack()) 1f else 0.4f
-        binding.btnForward.alpha = if (currentTab.webView.canGoForward()) 1f else 0.4f
+        binding.btnBack.alpha = if (currentTab.webView.canGoBack()) 1f else 0.38f
+        binding.btnForward.alpha = if (currentTab.webView.canGoForward()) 1f else 0.38f
     }
 
     private fun requestNotificationPermissionIfNeeded() {
@@ -1112,16 +1112,10 @@ class MainActivity : AppCompatActivity() {
                 if (binding.dlProgress.isIndeterminate) binding.dlProgress.isIndeterminate = false
                 binding.dlProgress.setProgressCompat(Downloads.totalProgressPercent().coerceIn(0, 100), true)
             }
-            if (binding.urlBar.paddingStart != dp(42)) {
-                binding.urlBar.setPaddingRelative(
-                    dp(42), binding.urlBar.paddingTop, binding.urlBar.paddingEnd, binding.urlBar.paddingBottom
-                )
-            }
+            binding.urlLeadingIcon.visibility = View.GONE
         } else if (binding.dlStatus.visibility != View.GONE) {
             binding.dlStatus.visibility = View.GONE
-            binding.urlBar.setPaddingRelative(
-                dp(14), binding.urlBar.paddingTop, binding.urlBar.paddingEnd, binding.urlBar.paddingBottom
-            )
+            binding.urlLeadingIcon.visibility = View.VISIBLE
         }
     }
 
