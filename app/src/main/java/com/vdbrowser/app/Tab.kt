@@ -11,4 +11,5 @@ class Tab(val webView: WebView) {
     var title: String = "New Tab"
     var url: String = ""
     var favicon: android.graphics.Bitmap? = null
+    var preview: android.graphics.Bitmap? = null
 }

@@ -56,6 +56,11 @@
         <item name="cornerSize">12dp</item>
     </style>
 
+    <style name="ShapeAppearance.VD.Preview" parent="">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">16dp</item>
+    </style>
+
     <!-- Bottom sheet header: drag handle + title row -->
     <style name="SheetHeader">
         <item name="android:layout_width">match_parent</item>

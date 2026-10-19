@@ -176,6 +176,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun selectTab(index: Int) {
         if (index !in tabs.indices) return
+        tabs.firstOrNull { it.webView.parent === binding.webContainer }?.let { capturePreview(it) }
         currentIndex = index
         val web = currentTab.webView
         (web.parent as? ViewGroup)?.removeView(web)
@@ -187,6 +188,23 @@ class MainActivity : AppCompatActivity() {
         updateNavButtons()
         updateTabCount()
         updateBookmarkIcon()
+    }
+
+    /** Snapshot the visible part of a tab's page at reduced size for the tab grid. */
+    private fun capturePreview(tab: Tab) {
+        val web = tab.webView
+        if (web.width <= 0 || web.height <= 0 || !web.isAttachedToWindow) return
+        val scale = 0.4f
+        val w = (web.width * scale).toInt().coerceAtLeast(1)
+        val h = (web.height * scale).toInt().coerceAtLeast(1)
+        val bmp = runCatching { Bitmap.createBitmap(w, h, Bitmap.Config.RGB_565) }.getOrNull() ?: return
+        runCatching {
+            val canvas = android.graphics.Canvas(bmp)
+            canvas.scale(scale, scale)
+            canvas.translate(-web.scrollX.toFloat(), -web.scrollY.toFloat())
+            web.draw(canvas)
+            tab.preview = bmp
+        }
     }
 
     private fun closeTab(index: Int) {
@@ -685,9 +703,13 @@ class MainActivity : AppCompatActivity() {
         val content = layoutInflater.inflate(R.layout.sheet_tabs, null)
         sheet.setContentView(content)
 
+        capturePreview(currentTab)
+        sheet.behavior.state = com.google.android.material.bottomsheet.BottomSheetBehavior.STATE_EXPANDED
+        sheet.behavior.skipCollapsed = true
+
         val recycler = content.findViewById<RecyclerView>(R.id.tabList)
         val header = content.findViewById<TextView>(R.id.tabsTitle)
-        recycler.layoutManager = LinearLayoutManager(this)
+        recycler.layoutManager = androidx.recyclerview.widget.GridLayoutManager(this, if (isWide) 4 else 2)
 
         lateinit var adapter: TabAdapter
         fun refreshHeader() { header.text = getString(R.string.tabs_title, tabs.size) }
