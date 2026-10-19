@@ -1,25 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:orientation="vertical"
-    android:paddingHorizontal="20dp"
-    android:paddingVertical="12dp">
+    style="@style/ListRow"
+    android:background="@null"
+    android:paddingEnd="16dp">
 
-    <TextView
-        android:id="@+id/historyTitle"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:ellipsize="middle"
-        android:maxLines="1"
-        android:textSize="15sp"
-        android:textStyle="bold" />
+    <ImageView
+        android:id="@+id/historyIcon"
+        style="@style/ListLeadingIcon"
+        android:contentDescription="@null"
+        android:src="@drawable/ic_download" />
 
-    <TextView
-        android:id="@+id/historySubtitle"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:maxLines="1"
-        android:textColor="?android:attr/textColorSecondary"
-        android:textSize="12sp" />
+    <LinearLayout style="@style/ListText">
+
+        <TextView
+            android:id="@+id/historyTitle"
+            style="@style/ListTitle"
+            android:ellipsize="middle" />
+
+        <TextView
+            android:id="@+id/historySubtitle"
+            style="@style/ListSubtitle" />
+    </LinearLayout>
 </LinearLayout>

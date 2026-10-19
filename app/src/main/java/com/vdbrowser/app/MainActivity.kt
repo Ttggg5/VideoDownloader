@@ -35,7 +35,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.appcompat.app.AlertDialog
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.ContextCompat
@@ -668,7 +668,7 @@ class MainActivity : AppCompatActivity() {
         val input = content.findViewById<android.widget.EditText>(R.id.renameInput)
         input.setText(DownloadHelper.defaultName(item))
 
-        AlertDialog.Builder(this)
+        MaterialAlertDialogBuilder(this)
             .setTitle(R.string.rename_title)
             .setView(content)
             .setPositiveButton(R.string.download_action) { _, _ ->
@@ -903,7 +903,7 @@ class MainActivity : AppCompatActivity() {
             .map { if (it <= 0) getString(R.string.size_off) else formatBytes(it) }
             .toTypedArray()
         val checked = values.indexOfFirst { it == minSizeBytes }.coerceAtLeast(0)
-        AlertDialog.Builder(this)
+        MaterialAlertDialogBuilder(this)
             .setTitle(R.string.opt_min_size)
             .setSingleChoiceItems(labels, checked) { d, which ->
                 minSizeBytes = values[which]
@@ -919,7 +919,7 @@ class MainActivity : AppCompatActivity() {
         val keys = arrayOf("google", "bing", "ddg")
         val labels = arrayOf("Google", "Bing", "DuckDuckGo")
         val checked = keys.indexOf(searchEngine).coerceAtLeast(0)
-        AlertDialog.Builder(this)
+        MaterialAlertDialogBuilder(this)
             .setTitle(R.string.opt_search_engine)
             .setSingleChoiceItems(labels, checked) { d, which ->
                 searchEngine = keys[which]
@@ -962,7 +962,7 @@ class MainActivity : AppCompatActivity() {
         }
         val checked = tags.indexOf(currentTag).coerceAtLeast(0)
 
-        AlertDialog.Builder(this)
+        MaterialAlertDialogBuilder(this)
             .setTitle(R.string.language_title)
             .setSingleChoiceItems(labels, checked) { dialog, which ->
                 val tag = tags[which]

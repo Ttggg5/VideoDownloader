@@ -1,74 +1,67 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="vertical"
-    android:paddingHorizontal="20dp"
-    android:paddingVertical="12dp">
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:paddingStart="16dp"
+    android:paddingEnd="8dp"
+    android:paddingVertical="10dp">
 
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical">
+    <ImageView
+        style="@style/ListLeadingIcon"
+        android:contentDescription="@null"
+        android:src="@drawable/ic_download" />
+
+    <LinearLayout style="@style/ListText">
 
         <TextView
             android:id="@+id/downloadTitle"
-            android:layout_width="0dp"
+            style="@style/ListTitle"
+            android:ellipsize="middle" />
+
+        <ProgressBar
+            android:id="@+id/downloadBar"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="match_parent"
+            android:layout_height="6dp"
+            android:layout_marginVertical="6dp"
+            android:max="100"
+            android:progress="0"
+            android:progressDrawable="@drawable/progress_download"
+            android:indeterminateTint="?attr/colorPrimary" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:ellipsize="middle"
-            android:maxLines="1"
-            android:textSize="15sp"
-            android:textStyle="bold" />
+            android:orientation="horizontal">
 
-        <ImageButton
-            android:id="@+id/btnPauseResume"
-            android:layout_width="36dp"
-            android:layout_height="36dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="@string/pause"
-            android:src="@drawable/ic_pause" />
+            <TextView
+                android:id="@+id/downloadState"
+                style="@style/ListSubtitle"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:textAppearance="?attr/textAppearanceBodySmall" />
 
-        <ImageButton
-            android:id="@+id/btnCancel"
-            android:layout_width="36dp"
-            android:layout_height="36dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="@string/cancel"
-            android:src="@drawable/ic_close" />
+            <TextView
+                android:id="@+id/downloadBytes"
+                style="@style/ListSubtitle"
+                android:layout_width="wrap_content"
+                android:layout_marginStart="8dp"
+                android:textAppearance="?attr/textAppearanceBodySmall" />
+        </LinearLayout>
     </LinearLayout>
 
-    <ProgressBar
-        android:id="@+id/downloadBar"
-        style="?android:attr/progressBarStyleHorizontal"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="6dp"
-        android:max="100"
-        android:progress="0" />
+    <ImageButton
+        android:id="@+id/btnPauseResume"
+        style="@style/ListTrailingButton"
+        android:contentDescription="@string/pause"
+        android:src="@drawable/ic_pause" />
 
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:layout_marginTop="2dp">
-
-        <TextView
-            android:id="@+id/downloadState"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:maxLines="1"
-            android:textColor="?android:attr/textColorSecondary"
-            android:textSize="12sp" />
-
-        <TextView
-            android:id="@+id/downloadBytes"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:maxLines="1"
-            android:textColor="?android:attr/textColorSecondary"
-            android:textSize="12sp" />
-    </LinearLayout>
+    <ImageButton
+        android:id="@+id/btnCancel"
+        style="@style/ListTrailingButton"
+        android:contentDescription="@string/cancel"
+        android:src="@drawable/ic_close" />
 </LinearLayout>
