@@ -1,22 +1,38 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="horizontal"
+    android:layout_marginBottom="6dp"
+    android:background="@drawable/bg_media_row"
     android:gravity="center_vertical"
-    android:background="?attr/selectableItemBackground"
-    android:paddingHorizontal="20dp"
-    android:paddingVertical="14dp">
+    android:orientation="horizontal"
+    android:padding="8dp">
 
-    <ImageView
-        android:id="@+id/mediaThumb"
-        android:layout_width="64dp"
-        android:layout_height="40dp"
-        android:layout_marginEnd="16dp"
-        android:background="?attr/colorSurfaceVariant"
-        android:contentDescription="@string/downloads"
-        android:scaleType="centerCrop"
-        android:src="@drawable/ic_download" />
+    <FrameLayout
+        android:layout_width="96dp"
+        android:layout_height="54dp"
+        android:layout_marginEnd="12dp">
+
+        <com.google.android.material.imageview.ShapeableImageView
+            android:id="@+id/mediaThumb"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="?attr/colorSurfaceContainerHighest"
+            android:contentDescription="@null"
+            android:scaleType="centerCrop"
+            app:shapeAppearanceOverlay="@style/ShapeAppearance.VD.Thumb" />
+
+        <ImageView
+            android:layout_width="26dp"
+            android:layout_height="26dp"
+            android:layout_gravity="center"
+            android:background="@drawable/bg_play_overlay"
+            android:contentDescription="@null"
+            android:padding="5dp"
+            android:src="@drawable/ic_play"
+            app:tint="@android:color/white" />
+    </FrameLayout>
 
     <LinearLayout
         android:layout_width="0dp"
@@ -26,31 +42,25 @@
 
         <TextView
             android:id="@+id/mediaTitle"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            style="@style/ListTitle"
             android:ellipsize="middle"
-            android:maxLines="1"
-            android:textSize="15sp"
-            android:textStyle="bold" />
+            android:textAppearance="?attr/textAppearanceTitleSmall" />
 
         <TextView
             android:id="@+id/mediaSubtitle"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:ellipsize="end"
-            android:maxLines="1"
-            android:textColor="?android:attr/textColorSecondary"
-            android:textSize="12sp" />
-    </LinearLayout>
+            style="@style/ListSubtitle"
+            android:textAppearance="?attr/textAppearanceBodySmall" />
 
-    <TextView
-        android:id="@+id/mediaSize"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="12dp"
-        android:minWidth="56dp"
-        android:gravity="end"
-        android:text="…"
-        android:textColor="?android:attr/textColorSecondary"
-        android:textSize="13sp" />
+        <TextView
+            android:id="@+id/mediaSize"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:background="@drawable/bg_size_chip"
+            android:paddingHorizontal="8dp"
+            android:paddingVertical="2dp"
+            android:text="…"
+            android:textAppearance="?attr/textAppearanceLabelMedium"
+            android:textColor="?attr/colorOnSecondaryContainer" />
+    </LinearLayout>
 </LinearLayout>

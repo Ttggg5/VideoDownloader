@@ -32,19 +32,18 @@ class MediaAdapter(
         holder.title.text = item.label
         val kind = if (item.isStream) "Stream" else "Video"
         holder.subtitle.text = "$kind · ${item.type.uppercase()} · ${shortUrl(item.url)}"
+        holder.size.visibility =
+            if (item.sizeBytes == MediaItem.SIZE_UNKNOWN) View.GONE else View.VISIBLE
         holder.size.text = when (item.sizeBytes) {
             MediaItem.SIZE_FETCHING -> "…"
-            MediaItem.SIZE_UNKNOWN -> "—"
             else -> formatBytes(item.sizeBytes)
         }
 
         val thumb = item.thumbnail
         if (thumb != null) {
-            holder.thumb.scaleType = ImageView.ScaleType.CENTER_CROP
             holder.thumb.setImageBitmap(thumb)
         } else {
-            holder.thumb.scaleType = ImageView.ScaleType.CENTER_INSIDE
-            holder.thumb.setImageResource(R.drawable.ic_download)
+            holder.thumb.setImageDrawable(null)
             if (!item.thumbRequested) {
                 item.thumbRequested = true
                 onNeedThumb(item)
