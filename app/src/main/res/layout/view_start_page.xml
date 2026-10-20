@@ -13,7 +13,7 @@
         android:orientation="vertical"
         android:paddingHorizontal="24dp"
         android:paddingTop="56dp"
-        android:paddingBottom="24dp">
+        android:paddingBottom="144dp">
 
         <ImageView
             android:layout_width="72dp"

@@ -53,6 +53,12 @@ class MainActivity : AppCompatActivity() {
     private var currentIndex = 0
     private val currentTab get() = tabs[currentIndex]
 
+    private var barHidden = false
+    private var scrollAccum = 0
+    private val barInterpolator = android.view.animation.PathInterpolator(0.4f, 0f, 0.2f, 1f)
+    private var badgeTab: Tab? = null
+    private var badgeCount = 0
+
     private var adBlockEnabled = true
     private var tabStripAdapter: TabStripAdapter? = null
     private var isWide = false
@@ -202,6 +208,8 @@ class MainActivity : AppCompatActivity() {
         updateTabCount()
         updateBookmarkIcon()
         updateStartPage()
+        scrollAccum = 0
+        showBar()
     }
 
     /** Snapshot the visible part of a tab's page at reduced size for the tab grid. */
@@ -293,6 +301,7 @@ class MainActivity : AppCompatActivity() {
         CookieManager.getInstance().setAcceptThirdPartyCookies(web, true)
 
         web.addJavascriptInterface(JsBridge(tab), "VDBridge")
+        web.setOnScrollChangeListener { _, _, y, _, oldY -> onPageScrolled(tab, y, oldY) }
 
         web.webViewClient = object : WebViewClient() {
             override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
@@ -305,6 +314,7 @@ class MainActivity : AppCompatActivity() {
                     if (tab === currentTab) updateStartPage()
                 }
                 if (tab === currentTab) {
+                    showBar()
                     if (!binding.urlBar.hasFocus()) binding.urlBar.setText(url)
                     updateBadge()
                     updateBookmarkIcon()
@@ -414,6 +424,10 @@ class MainActivity : AppCompatActivity() {
                 true
             } else false
         }
+        barHidden = false
+        scrollAccum = 0
+        binding.bottomBar?.clipToOutline = true
+        binding.urlBar.setOnFocusChangeListener { _, hasFocus -> if (hasFocus) showBar() }
         binding.btnBack.setOnClickListener {
             if (currentTab.webView.canGoBack()) currentTab.webView.goBack()
         }
@@ -484,10 +498,14 @@ class MainActivity : AppCompatActivity() {
         var dragged = false
         val touchSlop = 12f
 
-        binding.btnDownloads.setOnTouchListener { _, event ->
+        fun pressScale(v: View, s: Float) =
+            v.animate().scaleX(s).scaleY(s).setDuration(110).start()
+
+        binding.btnDownloads.setOnTouchListener { v, event ->
             val parent = container.parent as View
             when (event.actionMasked) {
                 MotionEvent.ACTION_DOWN -> {
+                    pressScale(v, 0.9f)
                     downX = event.rawX
                     downY = event.rawY
                     offsetX = container.x - event.rawX
@@ -506,7 +524,12 @@ class MainActivity : AppCompatActivity() {
                     true
                 }
                 MotionEvent.ACTION_UP -> {
+                    pressScale(v, 1f)
                     if (!dragged) showMediaSheet()
+                    true
+                }
+                MotionEvent.ACTION_CANCEL -> {
+                    pressScale(v, 1f)
                     true
                 }
                 else -> false
@@ -1073,10 +1096,46 @@ class MainActivity : AppCompatActivity() {
 
     private fun updateBadge() {
         val count = currentTab.sniffer.countPassing(minSizeBytes)
+        val grew = badgeTab === currentTab && count > badgeCount
+        badgeTab = currentTab
+        badgeCount = count
         binding.downloadBadge.apply {
             visibility = if (count > 0) View.VISIBLE else View.GONE
             text = if (count > 99) "99+" else count.toString()
+            if (grew) {
+                scaleX = 0.5f
+                scaleY = 0.5f
+                animate().scaleX(1f).scaleY(1f).setDuration(320)
+                    .setInterpolator(android.view.animation.OvershootInterpolator(3f)).start()
+            }
         }
+    }
+
+    // ------------------------------------------------- Bottom bar auto-hide
+
+    private fun onPageScrolled(tab: Tab, y: Int, oldY: Int) {
+        if (tab !== currentTab || binding.bottomBar == null) return
+        if (y <= 0) { scrollAccum = 0; showBar(); return }
+        val dy = y - oldY
+        if ((dy > 0) != (scrollAccum > 0)) scrollAccum = 0
+        scrollAccum += dy
+        if (scrollAccum > dp(24)) hideBar() else if (scrollAccum < -dp(24)) showBar()
+    }
+
+    private fun hideBar() {
+        val bar = binding.bottomBar ?: return
+        if (barHidden || binding.urlBar.hasFocus()) return
+        barHidden = true
+        val margin = (bar.layoutParams as ViewGroup.MarginLayoutParams).bottomMargin
+        bar.animate().translationY((bar.height + margin + dp(12)).toFloat())
+            .setDuration(220).setInterpolator(barInterpolator).start()
+    }
+
+    private fun showBar() {
+        val bar = binding.bottomBar ?: return
+        if (!barHidden) return
+        barHidden = false
+        bar.animate().translationY(0f).setDuration(220).setInterpolator(barInterpolator).start()
     }
 
     /** Resolve a detected item's size in the background (drives the badge + filter). */

@@ -66,12 +66,6 @@
         <item name="fontFamily">sans-serif-medium</item>
     </style>
 
-    <!-- Forces the download FAB to be a full circle (M3 FABs are rounded squares). -->
-    <style name="ShapeAppearanceOverlay.Fab.Circle" parent="">
-        <item name="cornerFamily">rounded</item>
-        <item name="cornerSize">50%</item>
-    </style>
-
     <style name="ShapeAppearance.VD.Thumb" parent="">
         <item name="cornerFamily">rounded</item>
         <item name="cornerSize">12dp</item>

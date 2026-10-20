@@ -234,31 +234,34 @@
         android:clipChildren="false"
         android:clipToPadding="false">
 
-        <com.google.android.material.floatingactionbutton.FloatingActionButton
+        <ImageButton
             android:id="@+id/btnDownloads"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+            android:layout_width="68dp"
+            android:layout_height="68dp"
             android:layout_margin="8dp"
+            android:background="@drawable/bg_brand_gradient_oval"
             android:contentDescription="@string/downloads"
-            app:backgroundTint="?attr/colorPrimary"
-            app:fabCustomSize="68dp"
-            app:maxImageSize="34dp"
-            app:shapeAppearanceOverlay="@style/ShapeAppearanceOverlay.Fab.Circle"
-            app:srcCompat="@drawable/ic_download"
-            app:tint="?attr/colorOnPrimary" />
+            android:elevation="10dp"
+            android:foreground="?attr/selectableItemBackgroundBorderless"
+            android:outlineAmbientShadowColor="@color/brand_glow"
+            android:outlineSpotShadowColor="@color/brand_glow"
+            android:padding="17dp"
+            android:scaleType="fitCenter"
+            android:src="@drawable/ic_download"
+            app:tint="@android:color/white" />
 
         <TextView
             android:id="@+id/downloadBadge"
             android:layout_width="wrap_content"
-            android:layout_height="20dp"
+            android:layout_height="22dp"
             android:layout_gravity="top|end"
-            android:minWidth="20dp"
-            android:paddingHorizontal="5dp"
+            android:minWidth="22dp"
+            android:paddingHorizontal="6dp"
             android:background="@drawable/bg_badge"
             android:elevation="16dp"
             android:gravity="center"
             android:textAppearance="?attr/textAppearanceLabelSmall"
-            android:textColor="?attr/colorOnError"
+            android:textColor="?attr/colorOnTertiary"
             android:textStyle="bold"
             android:visibility="gone" />
     </FrameLayout>
