@@ -1,14 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!--
-      Material 3 color roles. These are the graceful fallback for API < 31 (or
-      whenever the system palette isn't available) — on Android 12+ this whole
-      scheme is overridden at runtime by DynamicColors with the user's actual
-      wallpaper-derived palette (Material You), which is what makes the app
-      pick up the same accent colors as Gmail/Photos/Chrome. Dark-mode values
-      for every one of these color names live in values-night/colors.xml, so
-      DayNight switches them automatically.
-    -->
+    <!-- Fixed violet/pink brand scheme; dark values live in values-night/colors.xml. -->
     <style name="Theme.VideoDownloader" parent="Theme.Material3.DayNight.NoActionBar">
         <item name="colorPrimary">@color/md_primary</item>
         <item name="colorOnPrimary">@color/md_on_primary</item>
@@ -43,6 +35,35 @@
         <item name="colorOnSurfaceInverse">@color/md_inverse_on_surface</item>
         <item name="colorPrimaryInverse">@color/md_inverse_primary</item>
         <item name="colorPrimaryDark">@color/md_primary</item>
+        <item name="textAppearanceHeadlineSmall">@style/TextAppearance.VD.HeadlineSmall</item>
+        <item name="textAppearanceTitleLarge">@style/TextAppearance.VD.TitleLarge</item>
+        <item name="textAppearanceTitleMedium">@style/TextAppearance.VD.TitleMedium</item>
+        <item name="textAppearanceTitleSmall">@style/TextAppearance.VD.TitleSmall</item>
+    </style>
+
+    <!-- Bolder, tighter headings -->
+    <style name="TextAppearance.VD.HeadlineSmall" parent="TextAppearance.Material3.HeadlineSmall">
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="fontFamily">sans-serif-medium</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:letterSpacing">-0.01</item>
+    </style>
+
+    <style name="TextAppearance.VD.TitleLarge" parent="TextAppearance.Material3.TitleLarge">
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="fontFamily">sans-serif-medium</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:letterSpacing">-0.005</item>
+    </style>
+
+    <style name="TextAppearance.VD.TitleMedium" parent="TextAppearance.Material3.TitleMedium">
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="fontFamily">sans-serif-medium</item>
+    </style>
+
+    <style name="TextAppearance.VD.TitleSmall" parent="TextAppearance.Material3.TitleSmall">
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="fontFamily">sans-serif-medium</item>
     </style>
 
     <!-- Forces the download FAB to be a full circle (M3 FABs are rounded squares). -->
