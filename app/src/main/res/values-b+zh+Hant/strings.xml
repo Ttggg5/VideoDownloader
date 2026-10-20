@@ -66,4 +66,5 @@
     <string name="download_action">下載</string>
     <string name="opt_section_browsing">瀏覽</string>
     <string name="opt_section_general">一般</string>
+    <string name="detected_media_title">偵測到的媒體</string>
 </resources>

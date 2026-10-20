@@ -43,11 +43,8 @@ class TabStripAdapter(
         holder.itemView.setBackgroundResource(
             if (active) R.drawable.bg_tab_chip_active else R.drawable.bg_tab_chip
         )
-        val textColor = MaterialColors.getColor(
-            holder.itemView,
-            if (active) com.google.android.material.R.attr.colorOnSecondaryContainer
-            else com.google.android.material.R.attr.colorOnSurfaceVariant
-        )
+        val textColor = if (active) android.graphics.Color.WHITE
+        else MaterialColors.getColor(holder.itemView, com.google.android.material.R.attr.colorOnSurfaceVariant)
         holder.title.setTextColor(textColor)
         holder.close.setColorFilter(textColor)
 

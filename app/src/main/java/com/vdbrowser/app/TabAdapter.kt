@@ -7,7 +7,8 @@ import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
-import com.google.android.material.card.MaterialCardView
+import android.graphics.Color
+import com.google.android.material.color.MaterialColors
 
 /** Cards in the tab switcher grid: favicon, title, close button and a page snapshot. */
 class TabAdapter(
@@ -18,7 +19,7 @@ class TabAdapter(
 ) : RecyclerView.Adapter<TabAdapter.VH>() {
 
     class VH(view: View) : RecyclerView.ViewHolder(view) {
-        val card: MaterialCardView = view.findViewById(R.id.tabCard)
+        val header: View = view.findViewById(R.id.tabHeader)
         val favicon: ImageView = view.findViewById(R.id.tabFavicon)
         val title: TextView = view.findViewById(R.id.tabTitle)
         val preview: ImageView = view.findViewById(R.id.tabPreview)
@@ -47,8 +48,21 @@ class TabAdapter(
             holder.preview.setImageResource(R.drawable.ic_public)
         }
 
-        val density = holder.itemView.resources.displayMetrics.density
-        holder.card.strokeWidth = if (position == currentIndex()) (3 * density).toInt() else 0
+        // The current tab gets a gradient title strip with white text.
+        val active = position == currentIndex()
+        if (active) {
+            holder.header.setBackgroundResource(R.drawable.bg_brand_gradient)
+            holder.title.setTextColor(Color.WHITE)
+            holder.close.setColorFilter(Color.WHITE)
+        } else {
+            holder.header.background = null
+            holder.title.setTextColor(
+                MaterialColors.getColor(holder.title, com.google.android.material.R.attr.colorOnSurface)
+            )
+            holder.close.setColorFilter(
+                MaterialColors.getColor(holder.close, com.google.android.material.R.attr.colorOnSurfaceVariant)
+            )
+        }
 
         holder.itemView.setOnClickListener {
             val pos = holder.bindingAdapterPosition

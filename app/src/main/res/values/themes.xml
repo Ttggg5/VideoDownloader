@@ -104,6 +104,7 @@
         <item name="android:overScrollMode">never</item>
         <item name="android:clipToPadding">false</item>
         <item name="android:paddingBottom">8dp</item>
+        <item name="android:layoutAnimation">@anim/layout_list_enter</item>
     </style>
 
     <!-- Empty states -->
@@ -273,6 +274,7 @@
         <item name="android:paddingVertical">8dp</item>
         <item name="android:paddingHorizontal">4dp</item>
         <item name="android:background">?attr/selectableItemBackgroundBorderless</item>
+        <item name="android:stateListAnimator">@animator/press_scale</item>
         <item name="android:clickable">true</item>
         <item name="android:focusable">true</item>
     </style>
@@ -280,10 +282,11 @@
     <style name="MenuTileIcon">
         <item name="android:layout_width">64dp</item>
         <item name="android:layout_height">56dp</item>
-        <item name="android:background">@drawable/bg_menu_tile</item>
+        <item name="android:background">@drawable/bg_brand_gradient_rounded</item>
         <item name="android:padding">16dp</item>
+        <item name="android:elevation">3dp</item>
         <item name="android:contentDescription">@null</item>
-        <item name="tint">?attr/colorOnSecondaryContainer</item>
+        <item name="tint">@android:color/white</item>
     </style>
 
     <style name="MenuTileLabel">
@@ -312,5 +315,15 @@
         <item name="android:layout_weight">1</item>
         <item name="android:background">?attr/selectableItemBackgroundBorderless</item>
         <item name="tint">?attr/colorOnSurfaceVariant</item>
+    </style>
+
+    <style name="Animation.VD.PopupUp" parent="">
+        <item name="android:windowEnterAnimation">@anim/popup_enter_up</item>
+        <item name="android:windowExitAnimation">@anim/popup_exit</item>
+    </style>
+
+    <style name="Animation.VD.PopupDown" parent="">
+        <item name="android:windowEnterAnimation">@anim/popup_enter_down</item>
+        <item name="android:windowExitAnimation">@anim/popup_exit</item>
     </style>
 </resources>

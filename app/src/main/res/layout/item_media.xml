@@ -5,6 +5,7 @@
     android:layout_height="wrap_content"
     android:layout_marginBottom="6dp"
     android:background="@drawable/bg_media_row"
+    android:stateListAnimator="@animator/press_scale"
     android:gravity="center_vertical"
     android:orientation="horizontal"
     android:padding="8dp">

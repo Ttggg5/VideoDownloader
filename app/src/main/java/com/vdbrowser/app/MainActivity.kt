@@ -191,6 +191,7 @@ class MainActivity : AppCompatActivity() {
         page.startTiles.layoutManager =
             androidx.recyclerview.widget.GridLayoutManager(this, if (isWide) 6 else 4)
         page.startTiles.adapter = StartTileAdapter(items) { item -> navigate(item.url) }
+        page.startTiles.scheduleLayoutAnimation()
     }
 
     private fun selectTab(index: Int) {
@@ -626,7 +627,6 @@ class MainActivity : AppCompatActivity() {
             isFocusable = true
             isOutsideTouchable = true
             elevation = dp(20).toFloat()
-            animationStyle = android.R.style.Animation_Dialog
             setBackgroundDrawable(ContextCompat.getDrawable(this@MainActivity, R.drawable.bg_popup))
             contentView = content
         }
@@ -635,7 +635,8 @@ class MainActivity : AppCompatActivity() {
         val empty = content.findViewById<View>(R.id.emptyView)
         val header = content.findViewById<TextView>(R.id.sheetTitle)
         val loading = content.findViewById<View>(R.id.mediaLoading)
-        header.text = getString(R.string.detected_media, items.size)
+        header.text = getString(R.string.detected_media_title)
+        content.findViewById<TextView>(R.id.mediaCount).text = items.size.toString()
 
         if (items.isEmpty()) {
             recycler.visibility = View.GONE
@@ -695,6 +696,7 @@ class MainActivity : AppCompatActivity() {
         val spaceAbove = fabLoc[1] - rootTop - margin
         val spaceBelow = rootBottom - (fabLoc[1] + fab.height) - margin
         val showAbove = spaceAbove >= spaceBelow
+        popup.animationStyle = if (showAbove) R.style.Animation_VD_PopupUp else R.style.Animation_VD_PopupDown
         val avail = (if (showAbove) spaceAbove else spaceBelow)
             .coerceAtMost((resources.displayMetrics.heightPixels * 0.6f).toInt())
             .coerceAtLeast(dp(120))

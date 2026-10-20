@@ -14,7 +14,27 @@
         <TextView
             android:id="@+id/sheetTitle"
             style="@style/SheetTitle"
-            android:text="@string/downloads" />
+            android:layout_width="wrap_content"
+            android:layout_weight="0"
+            android:text="@string/detected_media_title" />
+
+        <TextView
+            android:id="@+id/mediaCount"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="10dp"
+            android:background="@drawable/bg_brand_gradient_pill"
+            android:minWidth="28dp"
+            android:gravity="center"
+            android:paddingHorizontal="10dp"
+            android:paddingVertical="2dp"
+            android:textAppearance="?attr/textAppearanceLabelLarge"
+            android:textColor="@android:color/white" />
+
+        <View
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:layout_weight="1" />
 
         <com.google.android.material.progressindicator.CircularProgressIndicator
             android:id="@+id/mediaLoading"
