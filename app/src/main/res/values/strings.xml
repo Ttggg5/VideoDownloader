@@ -67,4 +67,7 @@
     <string name="opt_section_browsing">Browsing</string>
     <string name="opt_section_general">General</string>
     <string name="detected_media_title">Detected media</string>
+    <string name="undo">Undo</string>
+    <string name="tab_closed">Tab closed</string>
+    <string name="switch_to_tab">Switch</string>
 </resources>

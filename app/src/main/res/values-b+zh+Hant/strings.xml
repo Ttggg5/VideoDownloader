@@ -67,4 +67,7 @@
     <string name="opt_section_browsing">瀏覽</string>
     <string name="opt_section_general">一般</string>
     <string name="detected_media_title">偵測到的媒體</string>
+    <string name="undo">復原</string>
+    <string name="tab_closed">已關閉分頁</string>
+    <string name="switch_to_tab">切換</string>
 </resources>

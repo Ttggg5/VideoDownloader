@@ -67,4 +67,7 @@
     <string name="opt_section_browsing">浏览</string>
     <string name="opt_section_general">通用</string>
     <string name="detected_media_title">检测到的媒体</string>
+    <string name="undo">撤销</string>
+    <string name="tab_closed">已关闭标签页</string>
+    <string name="switch_to_tab">切换</string>
 </resources>

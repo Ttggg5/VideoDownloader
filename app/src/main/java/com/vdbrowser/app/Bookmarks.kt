@@ -37,6 +37,14 @@ object Bookmarks {
         }
     }
 
+    /** Put a bookmark back at a specific position (used by Undo). */
+    fun insert(context: Context, index: Int, item: Item) {
+        val list = all(context)
+        if (list.any { it.url == item.url }) return
+        list.add(index.coerceIn(0, list.size), item)
+        save(context, list)
+    }
+
     fun remove(context: Context, url: String) {
         save(context, all(context).filter { it.url != url })
     }

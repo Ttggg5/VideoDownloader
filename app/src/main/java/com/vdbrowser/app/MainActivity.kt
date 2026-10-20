@@ -32,7 +32,7 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.FrameLayout
 import android.widget.TextView
-import android.widget.Toast
+import com.google.android.material.snackbar.Snackbar
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContracts
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
@@ -58,6 +58,8 @@ class MainActivity : AppCompatActivity() {
     private val barInterpolator = android.view.animation.PathInterpolator(0.4f, 0f, 0.2f, 1f)
     private var badgeTab: Tab? = null
     private var badgeCount = 0
+    /** Tabs closed but still undoable; destroyed when their snackbar ends. */
+    private val pendingClosed = mutableListOf<Tab>()
 
     private var adBlockEnabled = true
     private var tabStripAdapter: TabStripAdapter? = null
@@ -231,19 +233,61 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun closeTab(index: Int) {
+    /**
+     * Close a tab with an Undo snackbar. The WebView is only destroyed once the
+     * snackbar goes away without Undo, so restoring keeps the page and history.
+     */
+    private fun closeTab(index: Int, snackHost: View? = null, onRestored: () -> Unit = {}) {
         if (index !in tabs.indices) return
+        val wasCurrent = index == currentIndex
         val tab = tabs.removeAt(index)
         (tab.webView.parent as? ViewGroup)?.removeView(tab.webView)
-        tab.webView.destroy()
+        pendingClosed.add(tab)
 
         if (tabs.isEmpty()) {
             openNewTab()
-            return
+        } else {
+            val target = if (index < currentIndex) currentIndex - 1
+            else currentIndex.coerceAtMost(tabs.size - 1)
+            selectTab(target)
         }
-        val target = if (index < currentIndex) currentIndex - 1
-        else currentIndex.coerceAtMost(tabs.size - 1)
-        selectTab(target)
+
+        snack(
+            snackHost, getString(R.string.tab_closed), R.string.undo,
+            onEnd = { undone ->
+                if (pendingClosed.remove(tab) && !undone) tab.webView.destroy()
+            }
+        ) {
+            val at = index.coerceAtMost(tabs.size)
+            if (!wasCurrent && at <= currentIndex) currentIndex++
+            tabs.add(at, tab)
+            if (wasCurrent) selectTab(at) else updateTabCount()
+            onRestored()
+        }
+    }
+
+    /**
+     * Show a snackbar on [host] (a sheet's content, so it appears above the
+     * sheet) or on the main screen, kept clear of the floating bottom bar.
+     */
+    private fun snack(
+        host: View?,
+        text: CharSequence,
+        actionRes: Int = 0,
+        onEnd: ((undone: Boolean) -> Unit)? = null,
+        action: (() -> Unit)? = null
+    ) {
+        val bar = Snackbar.make(host ?: binding.root, text, Snackbar.LENGTH_LONG)
+        if (host == null) binding.bottomBar?.let { if (!barHidden) bar.anchorView = it }
+        if (actionRes != 0 && action != null) bar.setAction(actionRes) { action() }
+        if (onEnd != null) {
+            bar.addCallback(object : Snackbar.Callback() {
+                override fun onDismissed(transientBottomBar: Snackbar?, event: Int) {
+                    onEnd(event == DISMISS_EVENT_ACTION)
+                }
+            })
+        }
+        bar.show()
     }
 
     private fun updateTabCount() {
@@ -254,9 +298,13 @@ class MainActivity : AppCompatActivity() {
 
     /** Open a URL in a new tab without leaving the current one. */
     private fun openInBackgroundTab(url: String) {
-        tabs.add(createTab(url))
+        val tab = createTab(url)
+        tabs.add(tab)
         updateTabCount()
-        Toast.makeText(this, R.string.opened_in_new_tab, Toast.LENGTH_SHORT).show()
+        snack(null, getString(R.string.opened_in_new_tab), R.string.switch_to_tab) {
+            val i = tabs.indexOf(tab)
+            if (i >= 0) selectTab(i)
+        }
     }
 
     private fun showLinkMenu(url: String) {
@@ -272,7 +320,7 @@ class MainActivity : AppCompatActivity() {
         content.findViewById<View>(R.id.linkCopy).setOnClickListener {
             val clip = getSystemService(CLIPBOARD_SERVICE) as ClipboardManager
             clip.setPrimaryClip(ClipData.newPlainText("url", url))
-            Toast.makeText(this, R.string.link_copied, Toast.LENGTH_SHORT).show()
+            snack(null, getString(R.string.link_copied))
             sheet.dismiss()
         }
         sheet.show()
@@ -726,7 +774,7 @@ class MainActivity : AppCompatActivity() {
             .setView(content)
             .setPositiveButton(R.string.download_action) { _, _ ->
                 if (item.isStream) {
-                    Toast.makeText(this, R.string.stream_note, Toast.LENGTH_LONG).show()
+                    snack(null, getString(R.string.stream_note))
                 }
                 DownloadHelper.enqueue(this, item, pageUrl, ua, input.text.toString())
             }
@@ -766,18 +814,57 @@ class MainActivity : AppCompatActivity() {
 
         lateinit var adapter: TabAdapter
         fun refreshHeader() { header.text = getString(R.string.tabs_title, tabs.size) }
+        fun refresh() { adapter.notifyDataSetChanged(); refreshHeader() }
+        fun close(i: Int) {
+            closeTab(i, content) { refresh() }
+            refresh()
+        }
         adapter = TabAdapter(
             tabs = tabs,
             currentIndex = { currentIndex },
             onSelect = { i -> selectTab(i); sheet.dismiss() },
-            onClose = { i ->
-                closeTab(i)
-                adapter.notifyDataSetChanged()
-                refreshHeader()
-            }
+            onClose = { i -> close(i) }
         )
         recycler.adapter = adapter
         refreshHeader()
+
+        // Swipe a card sideways to close it; it fades out as it slides.
+        androidx.recyclerview.widget.ItemTouchHelper(object :
+            androidx.recyclerview.widget.ItemTouchHelper.SimpleCallback(
+                0,
+                androidx.recyclerview.widget.ItemTouchHelper.LEFT or
+                    androidx.recyclerview.widget.ItemTouchHelper.RIGHT
+            ) {
+            override fun onMove(
+                rv: RecyclerView,
+                vh: RecyclerView.ViewHolder,
+                target: RecyclerView.ViewHolder
+            ) = false
+
+            override fun onSwiped(vh: RecyclerView.ViewHolder, direction: Int) {
+                val pos = vh.bindingAdapterPosition
+                if (pos != RecyclerView.NO_POSITION) close(pos) else refresh()
+            }
+
+            override fun onChildDraw(
+                c: android.graphics.Canvas,
+                rv: RecyclerView,
+                vh: RecyclerView.ViewHolder,
+                dX: Float,
+                dY: Float,
+                actionState: Int,
+                isCurrentlyActive: Boolean
+            ) {
+                val w = vh.itemView.width.coerceAtLeast(1)
+                vh.itemView.alpha = 1f - (kotlin.math.abs(dX) / w).coerceIn(0f, 1f)
+                super.onChildDraw(c, rv, vh, dX, dY, actionState, isCurrentlyActive)
+            }
+
+            override fun clearView(rv: RecyclerView, vh: RecyclerView.ViewHolder) {
+                super.clearView(rv, vh)
+                vh.itemView.alpha = 1f
+            }
+        }).attachToRecyclerView(recycler)
 
         content.findViewById<View>(R.id.btnNewTab).setOnClickListener {
             openNewTab()
@@ -812,12 +899,18 @@ class MainActivity : AppCompatActivity() {
     private fun toggleBookmark() {
         val url = currentTab.url
         if (url.isBlank()) return
-        if (Bookmarks.isBookmarked(this, url)) {
+        val all = Bookmarks.all(this)
+        val pos = all.indexOfFirst { it.url == url }
+        if (pos >= 0) {
+            val item = all[pos]
             Bookmarks.remove(this, url)
-            Toast.makeText(this, R.string.bookmark_removed, Toast.LENGTH_SHORT).show()
+            snack(null, getString(R.string.bookmark_removed), R.string.undo) {
+                Bookmarks.insert(this, pos, item)
+                updateBookmarkIcon()
+            }
         } else {
             Bookmarks.add(this, currentTab.title, url)
-            Toast.makeText(this, R.string.bookmark_added, Toast.LENGTH_SHORT).show()
+            snack(null, getString(R.string.bookmark_added))
         }
     }
 
@@ -837,11 +930,28 @@ class MainActivity : AppCompatActivity() {
             recycler.visibility = View.VISIBLE
             empty.visibility = View.GONE
             recycler.layoutManager = LinearLayoutManager(this)
-            recycler.adapter = BookmarkAdapter(
+            lateinit var adapter: BookmarkAdapter
+            fun syncEmpty() {
+                val none = adapter.itemCount == 0
+                recycler.visibility = if (none) View.GONE else View.VISIBLE
+                empty.visibility = if (none) View.VISIBLE else View.GONE
+            }
+            adapter = BookmarkAdapter(
                 items,
                 onOpen = { item -> currentTab.webView.loadUrl(item.url); sheet.dismiss() },
-                onDelete = { item -> Bookmarks.remove(this, item.url) }
+                onDelete = { pos, item ->
+                    Bookmarks.remove(this, item.url)
+                    updateBookmarkIcon()
+                    syncEmpty()
+                    snack(content, getString(R.string.bookmark_removed), R.string.undo) {
+                        Bookmarks.insert(this, pos, item)
+                        adapter.restore(pos, item)
+                        updateBookmarkIcon()
+                        syncEmpty()
+                    }
+                }
             )
+            recycler.adapter = adapter
         }
         sheet.setOnDismissListener { updateStartPage() }
         sheet.show()
@@ -927,7 +1037,7 @@ class MainActivity : AppCompatActivity() {
         }
         content.findViewById<View>(R.id.optClearData).setOnClickListener {
             clearBrowsingData()
-            Toast.makeText(this, R.string.data_cleared, Toast.LENGTH_SHORT).show()
+            snack(content, getString(R.string.data_cleared))
         }
         sheet.show()
     }
@@ -1223,6 +1333,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onDestroy() {
+        pendingClosed.forEach { it.webView.destroy() }
+        pendingClosed.clear()
         tabs.forEach { it.webView.destroy() }
         tabs.clear()
         super.onDestroy()

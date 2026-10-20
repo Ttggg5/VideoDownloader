@@ -13,7 +13,7 @@ import androidx.recyclerview.widget.RecyclerView
 class BookmarkAdapter(
     private val items: MutableList<Bookmarks.Item>,
     private val onOpen: (Bookmarks.Item) -> Unit,
-    private val onDelete: (Bookmarks.Item) -> Unit
+    private val onDelete: (Int, Bookmarks.Item) -> Unit
 ) : RecyclerView.Adapter<BookmarkAdapter.VH>() {
 
     class VH(view: View) : RecyclerView.ViewHolder(view) {
@@ -50,10 +50,16 @@ class BookmarkAdapter(
             if (pos != RecyclerView.NO_POSITION) {
                 val removed = items.removeAt(pos)
                 notifyItemRemoved(pos)
-                onDelete(removed)
+                onDelete(pos, removed)
             }
         }
     }
 
     override fun getItemCount(): Int = items.size
+
+    fun restore(pos: Int, item: Bookmarks.Item) {
+        val at = pos.coerceIn(0, items.size)
+        items.add(at, item)
+        notifyItemInserted(at)
+    }
 }
