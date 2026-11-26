@@ -26,6 +26,14 @@
             android:paddingStart="12dp"
             android:paddingEnd="2dp">
 
+            <View
+                android:id="@+id/tabGroupDot"
+                android:layout_width="10dp"
+                android:layout_height="10dp"
+                android:layout_marginEnd="6dp"
+                android:background="@drawable/bg_group_dot"
+                android:visibility="gone" />
+
             <ImageView
                 android:id="@+id/tabFavicon"
                 android:layout_width="18dp"

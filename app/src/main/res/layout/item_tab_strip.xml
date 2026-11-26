@@ -9,6 +9,14 @@
     android:paddingStart="12dp"
     android:paddingEnd="4dp">
 
+    <View
+        android:id="@+id/tabChipGroupDot"
+        android:layout_width="8dp"
+        android:layout_height="8dp"
+        android:layout_marginEnd="6dp"
+        android:background="@drawable/bg_group_dot"
+        android:visibility="gone" />
+
     <ImageView
         android:id="@+id/tabChipFavicon"
         android:layout_width="16dp"

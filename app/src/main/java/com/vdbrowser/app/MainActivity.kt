@@ -174,6 +174,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun saveSession() {
         if (tabs.isEmpty()) return
+        TabGroups.prune(this, (tabs + pendingClosed).mapNotNullTo(HashSet()) { it.groupId })
         val keep = sessionTabs()
         Session.save(
             this,
@@ -1214,25 +1215,65 @@ class MainActivity : AppCompatActivity() {
 
         val recycler = content.findViewById<RecyclerView>(R.id.tabList)
         val header = content.findViewById<TextView>(R.id.tabsTitle)
+        val back = content.findViewById<View>(R.id.btnGroupBack)
+        val rename = content.findViewById<View>(R.id.btnGroupRename)
+        val ungroup = content.findViewById<View>(R.id.btnGroupUngroup)
+        val newIncognito = content.findViewById<View>(R.id.btnNewIncognito)
         recycler.layoutManager = androidx.recyclerview.widget.GridLayoutManager(this, if (isWide) 4 else 2)
 
+        // null = all tabs (groups collapsed into one card); otherwise one group's tabs.
+        var viewingGroup: String? = null
         lateinit var adapter: TabAdapter
-        fun refreshHeader() { header.text = getString(R.string.tabs_title, tabs.size) }
-        fun refresh() { adapter.notifyDataSetChanged(); refreshHeader() }
+
+        fun refresh() {
+            val group = TabGroups.get(this, viewingGroup)?.takeIf { g -> tabs.any { it.groupId == g.id } }
+            if (group == null) viewingGroup = null
+            header.text = if (group != null) "${group.name} (${tabs.count { it.groupId == group.id }})"
+            else getString(R.string.tabs_title, tabs.size)
+            header.setTextColor(
+                group?.color ?: MaterialColors.getColor(header, com.google.android.material.R.attr.colorOnSurface)
+            )
+            val inGroup = if (group != null) View.VISIBLE else View.GONE
+            back.visibility = inGroup
+            rename.visibility = inGroup
+            ungroup.visibility = inGroup
+            newIncognito.visibility = if (group == null) View.VISIBLE else View.GONE
+            adapter.refresh()
+        }
         fun close(i: Int) {
             closeTab(i, content) { refresh() }
             refresh()
         }
         adapter = TabAdapter(
             tabs = tabs,
+            entries = { tabEntries(viewingGroup) },
             currentIndex = { currentIndex },
             onSelect = { i -> selectTab(i); sheet.dismiss() },
-            onClose = { i -> close(i) }
+            onClose = { i -> close(i) },
+            onLongPress = { i, anchor -> showTabCardMenu(i, anchor) { refresh() } },
+            onOpenGroup = { id -> viewingGroup = id; refresh() }
         )
         recycler.adapter = adapter
-        refreshHeader()
+        refresh()
 
-        // Swipe a card sideways to close it; it fades out as it slides.
+        back.setOnClickListener { viewingGroup = null; refresh() }
+        rename.setOnClickListener {
+            val id = viewingGroup ?: return@setOnClickListener
+            showGroupNameDialog(TabGroups.get(this, id), withColors = false) { name, _ ->
+                TabGroups.rename(this, id, name)
+                refresh()
+                refreshTabStrip()
+            }
+        }
+        ungroup.setOnClickListener {
+            val id = viewingGroup ?: return@setOnClickListener
+            tabs.filter { it.groupId == id }.forEach { it.groupId = null }
+            viewingGroup = null
+            refresh()
+            updateTabCount()
+        }
+
+        // Swipe a tab card sideways to close it; it fades out as it slides.
         androidx.recyclerview.widget.ItemTouchHelper(object :
             androidx.recyclerview.widget.ItemTouchHelper.SimpleCallback(
                 0,
@@ -1245,9 +1286,12 @@ class MainActivity : AppCompatActivity() {
                 target: RecyclerView.ViewHolder
             ) = false
 
+            override fun getSwipeDirs(rv: RecyclerView, vh: RecyclerView.ViewHolder): Int =
+                if (adapter.entryAt(vh.bindingAdapterPosition) is TabEntry.Single) super.getSwipeDirs(rv, vh) else 0
+
             override fun onSwiped(vh: RecyclerView.ViewHolder, direction: Int) {
-                val pos = vh.bindingAdapterPosition
-                if (pos != RecyclerView.NO_POSITION) close(pos) else refresh()
+                val entry = adapter.entryAt(vh.bindingAdapterPosition)
+                if (entry is TabEntry.Single) close(entry.index) else refresh()
             }
 
             override fun onChildDraw(
@@ -1270,15 +1314,129 @@ class MainActivity : AppCompatActivity() {
             }
         }).attachToRecyclerView(recycler)
 
-        content.findViewById<View>(R.id.btnNewIncognito).setOnClickListener {
+        newIncognito.setOnClickListener {
             openNewTab(incognito = true)
             sheet.dismiss()
         }
         content.findViewById<View>(R.id.btnNewTab).setOnClickListener {
+            val group = viewingGroup
             openNewTab()
+            if (group != null) moveTabToGroup(tabs.size - 1, group)
             sheet.dismiss()
         }
         sheet.show()
+    }
+
+    // ---------------------------------------------------------- Tab groups
+
+    /** Grid entries: one group's tabs, or every tab with each group collapsed into one card. */
+    private fun tabEntries(groupId: String?): List<TabEntry> {
+        if (groupId != null) {
+            return tabs.indices.filter { tabs[it].groupId == groupId }.map { TabEntry.Single(it) }
+        }
+        val out = ArrayList<TabEntry>()
+        val seen = HashSet<String>()
+        tabs.forEachIndexed { i, tab ->
+            val group = TabGroups.get(this, tab.groupId)
+            when {
+                group == null -> out.add(TabEntry.Single(i))
+                seen.add(group.id) ->
+                    out.add(TabEntry.Group(group, tabs.indices.filter { tabs[it].groupId == group.id }))
+            }
+        }
+        return out
+    }
+
+    /** Put a tab in a group (kept next to the group's other tabs), or take it out (null). */
+    private fun moveTabToGroup(index: Int, groupId: String?) {
+        if (index !in tabs.indices) return
+        val current = currentTab
+        val tab = tabs[index]
+        tab.groupId = groupId
+        if (groupId != null) {
+            tabs.removeAt(index)
+            val last = tabs.indexOfLast { it.groupId == groupId }
+            tabs.add(if (last >= 0) last + 1 else index.coerceAtMost(tabs.size), tab)
+        }
+        currentIndex = tabs.indexOf(current).coerceAtLeast(0)
+        updateTabCount()
+    }
+
+    private fun showTabCardMenu(index: Int, anchor: View, onChanged: () -> Unit) {
+        val tab = tabs.getOrNull(index) ?: return
+        if (tab.incognito) return
+        val menu = androidx.appcompat.widget.PopupMenu(this, anchor)
+        val groups = TabGroups.all(this).filter { it.id != tab.groupId && tabs.any { t -> t.groupId == it.id } }
+        menu.menu.add(0, 1, 0, R.string.add_to_new_group)
+        groups.forEachIndexed { i, g -> menu.menu.add(0, 100 + i, 1 + i, getString(R.string.move_to_group, g.name)) }
+        if (tab.groupId != null) menu.menu.add(0, 2, 99, R.string.remove_from_group)
+        menu.setOnMenuItemClickListener { item ->
+            when (item.itemId) {
+                1 -> showGroupNameDialog(null, withColors = true) { name, color ->
+                    val g = TabGroups.create(this, name, color)
+                    moveTabToGroup(tabs.indexOf(tab), g.id)
+                    onChanged()
+                }
+                2 -> { moveTabToGroup(tabs.indexOf(tab), null); onChanged() }
+                else -> groups.getOrNull(item.itemId - 100)?.let {
+                    moveTabToGroup(tabs.indexOf(tab), it.id)
+                    onChanged()
+                }
+            }
+            true
+        }
+        menu.show()
+    }
+
+    /** Name (and, for a new group, color) picker. */
+    private fun showGroupNameDialog(
+        existing: TabGroups.Group?,
+        withColors: Boolean,
+        onDone: (String, Int) -> Unit
+    ) {
+        val content = layoutInflater.inflate(R.layout.dialog_rename, null) as android.widget.LinearLayout
+        content.findViewById<com.google.android.material.textfield.TextInputLayout>(R.id.renameLayout)
+            .hint = getString(R.string.group_name)
+        val input = content.findViewById<android.widget.EditText>(R.id.renameInput)
+        val used = TabGroups.all(this).size
+        input.setText(existing?.name ?: "${getString(R.string.default_group_name)} ${used + 1}")
+
+        var color = existing?.color ?: TabGroups.COLORS[used % TabGroups.COLORS.size]
+        if (withColors) {
+            val row = android.widget.LinearLayout(this).apply {
+                orientation = android.widget.LinearLayout.HORIZONTAL
+                setPadding(0, dp(16), 0, dp(4))
+            }
+            val ring = MaterialColors.getColor(content, com.google.android.material.R.attr.colorOnSurface)
+            val swatches = TabGroups.COLORS.map { c ->
+                View(this).apply {
+                    layoutParams = android.widget.LinearLayout.LayoutParams(dp(36), dp(36)).apply { marginEnd = dp(12) }
+                    contentDescription = null
+                }
+            }
+            fun paint() = swatches.forEachIndexed { i, v ->
+                v.background = android.graphics.drawable.GradientDrawable().apply {
+                    shape = android.graphics.drawable.GradientDrawable.OVAL
+                    setColor(TabGroups.COLORS[i])
+                    if (TabGroups.COLORS[i] == color) setStroke(dp(3), ring)
+                }
+            }
+            swatches.forEachIndexed { i, v ->
+                v.setOnClickListener { color = TabGroups.COLORS[i]; paint() }
+                row.addView(v)
+            }
+            paint()
+            content.addView(row)
+        }
+        MaterialAlertDialogBuilder(this)
+            .setTitle(if (existing == null) R.string.new_group else R.string.rename_group)
+            .setView(content)
+            .setPositiveButton(R.string.save) { _, _ ->
+                val name = input.text.toString().trim().ifBlank { getString(R.string.default_group_name) }
+                onDone(name, color)
+            }
+            .setNegativeButton(R.string.cancel, null)
+            .show()
     }
 
     private fun showOverflowMenu() {

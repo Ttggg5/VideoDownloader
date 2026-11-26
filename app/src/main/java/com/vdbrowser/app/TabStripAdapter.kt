@@ -24,6 +24,7 @@ class TabStripAdapter(
         val favicon: ImageView = view.findViewById(R.id.tabChipFavicon)
         val title: TextView = view.findViewById(R.id.tabChipTitle)
         val close: ImageButton = view.findViewById(R.id.tabChipClose)
+        val groupDot: View = view.findViewById(R.id.tabChipGroupDot)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH {
@@ -38,6 +39,10 @@ class TabStripAdapter(
         val fav = tab.favicon
         if (fav != null) holder.favicon.setImageBitmap(fav)
         else holder.favicon.setImageResource(R.drawable.ic_public)
+
+        val group = TabGroups.get(holder.itemView.context, tab.groupId)
+        holder.groupDot.visibility = if (group != null) View.VISIBLE else View.GONE
+        group?.let { holder.groupDot.background?.mutate()?.setTint(it.color) }
 
         val active = position == currentIndex()
         holder.itemView.setBackgroundResource(

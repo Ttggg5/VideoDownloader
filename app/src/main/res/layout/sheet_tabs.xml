@@ -11,10 +11,39 @@
 
     <LinearLayout style="@style/SheetHeader">
 
+        <ImageButton
+            android:id="@+id/btnGroupBack"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_marginStart="-12dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/back"
+            android:src="@drawable/ic_back"
+            android:visibility="gone"
+            app:tint="?attr/colorOnSurface" />
+
         <TextView
             android:id="@+id/tabsTitle"
             style="@style/SheetTitle"
             android:text="@string/tabs" />
+
+        <ImageButton
+            android:id="@+id/btnGroupRename"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/rename_group"
+            android:src="@drawable/ic_edit"
+            android:visibility="gone"
+            app:tint="?attr/colorOnSurfaceVariant" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnGroupUngroup"
+            style="@style/Widget.Material3.Button.TextButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/ungroup"
+            android:visibility="gone" />
 
         <ImageButton
             android:id="@+id/btnNewIncognito"
