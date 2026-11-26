@@ -406,12 +406,68 @@ class MainActivity : AppCompatActivity() {
         page.startHeroIcon.setImageResource(if (inc) R.drawable.ic_incognito else R.drawable.ic_download)
         page.startHeroTitle.setText(if (inc) R.string.incognito else R.string.app_name)
         page.startHeroSubtitle.visibility = if (inc) View.VISIBLE else View.GONE
-        val items = Bookmarks.all(this)
-        page.startEmpty.visibility = if (items.isEmpty()) View.VISIBLE else View.GONE
+        val items = SpeedDial.tiles(this, if (isWide) 12 else 8)
+        page.startEmpty.visibility = View.GONE
         page.startTiles.layoutManager =
             androidx.recyclerview.widget.GridLayoutManager(this, if (isWide) 6 else 4)
-        page.startTiles.adapter = StartTileAdapter(items) { item -> navigate(item.url) }
+        page.startTiles.adapter = StartTileAdapter(
+            items,
+            onOpen = { tile -> navigate(tile.url) },
+            onLongPress = { tile, anchor -> showTileMenu(tile, anchor) },
+            onAdd = { showSiteDialog(null) }
+        )
         page.startTiles.scheduleLayoutAnimation()
+    }
+
+    private fun showTileMenu(tile: SpeedDial.Tile, anchor: View) {
+        val menu = androidx.appcompat.widget.PopupMenu(this, anchor)
+        menu.menu.add(0, 1, 0, R.string.edit)
+        menu.menu.add(0, 2, 1, if (tile.pinned) R.string.unpin else R.string.pin)
+        menu.menu.add(0, 3, 2, R.string.remove)
+        menu.setOnMenuItemClickListener { item ->
+            when (item.itemId) {
+                1 -> showSiteDialog(tile)
+                2 -> {
+                    if (tile.pinned) SpeedDial.unpin(this, tile.url) else SpeedDial.pin(this, tile.title, tile.url)
+                    updateStartPage()
+                }
+                3 -> {
+                    // Remove = gone from the dial: unpin it and stop suggesting the site.
+                    val index = if (tile.pinned) SpeedDial.unpin(this, tile.url) else -1
+                    SpeedDial.hide(this, tile.url)
+                    updateStartPage()
+                    snack(null, getString(R.string.site_removed), R.string.undo) {
+                        if (tile.pinned) SpeedDial.pin(this, tile.title, tile.url, index)
+                        else SpeedDial.unhide(this, SpeedDial.host(tile.url))
+                        updateStartPage()
+                    }
+                }
+            }
+            true
+        }
+        menu.show()
+    }
+
+    /** Add a site to the speed dial, or edit an existing tile (which pins it). */
+    private fun showSiteDialog(tile: SpeedDial.Tile?) {
+        val content = layoutInflater.inflate(R.layout.dialog_site, null)
+        val name = content.findViewById<android.widget.EditText>(R.id.siteName)
+        val address = content.findViewById<android.widget.EditText>(R.id.siteUrl)
+        tile?.let { name.setText(it.title); address.setText(it.url) }
+        MaterialAlertDialogBuilder(this)
+            .setTitle(if (tile == null) R.string.add_site else R.string.edit_site)
+            .setView(content)
+            .setPositiveButton(R.string.save) { _, _ ->
+                val raw = address.text.toString().trim()
+                if (raw.isEmpty()) return@setPositiveButton
+                val url = if (raw.startsWith("http://") || raw.startsWith("https://")) raw else "https://$raw"
+                val title = name.text.toString().trim()
+                if (tile != null && tile.pinned) SpeedDial.update(this, tile.url, title.ifBlank { SpeedDial.host(url) }, url)
+                else SpeedDial.pin(this, title, url)
+                updateStartPage()
+            }
+            .setNegativeButton(R.string.cancel, null)
+            .show()
     }
 
     private fun selectTab(index: Int) {

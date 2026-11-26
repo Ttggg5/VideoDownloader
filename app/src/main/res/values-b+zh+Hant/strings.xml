@@ -94,4 +94,15 @@
     <string name="incognito_desc">在無痕分頁中開啟的網頁不會儲存到歷史記錄。關閉所有無痕分頁後，其 Cookie 和網站資料將會刪除。</string>
     <string name="incognito_shared_cookies">此裝置的 WebView 無法分開保存無痕 Cookie，但仍不會記錄歷史。</string>
     <string name="suggestion_fill">編輯此建議</string>
+    <string name="speed_dial">快速撥號</string>
+    <string name="add_site">新增網站</string>
+    <string name="edit_site">編輯網站</string>
+    <string name="site_name">名稱</string>
+    <string name="site_url">網址</string>
+    <string name="pin">固定到快速撥號</string>
+    <string name="unpin">取消固定</string>
+    <string name="edit">編輯</string>
+    <string name="remove">移除</string>
+    <string name="site_removed">已從快速撥號移除</string>
+    <string name="save">儲存</string>
 </resources>

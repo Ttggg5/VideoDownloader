@@ -12,7 +12,7 @@ import org.json.JSONObject
  */
 object BrowsingHistory {
 
-    data class Entry(val title: String, val url: String, val time: Long)
+    data class Entry(val title: String, val url: String, val time: Long, val visits: Int = 1)
 
     private const val PREF = "browsing_history"
     private const val KEY = "items"
@@ -21,8 +21,9 @@ object BrowsingHistory {
     fun record(context: Context, title: String, url: String) {
         if (!url.startsWith("http://") && !url.startsWith("https://")) return
         val list = all(context)
+        val visits = (list.firstOrNull { it.url == url }?.visits ?: 0) + 1
         list.removeAll { it.url == url }
-        list.add(0, Entry(title.ifBlank { url }, url, System.currentTimeMillis()))
+        list.add(0, Entry(title.ifBlank { url }, url, System.currentTimeMillis(), visits))
         save(context, if (list.size > MAX) list.subList(0, MAX) else list)
     }
 
@@ -32,7 +33,7 @@ object BrowsingHistory {
         val list = ArrayList<Entry>(arr.length())
         for (i in 0 until arr.length()) {
             val o = arr.optJSONObject(i) ?: continue
-            list.add(Entry(o.optString("t"), o.optString("u"), o.optLong("ts")))
+            list.add(Entry(o.optString("t"), o.optString("u"), o.optLong("ts"), o.optInt("c", 1)))
         }
         return list
     }
@@ -45,7 +46,7 @@ object BrowsingHistory {
     private fun save(context: Context, list: List<Entry>) {
         val arr = JSONArray()
         list.forEach {
-            arr.put(JSONObject().put("t", it.title).put("u", it.url).put("ts", it.time))
+            arr.put(JSONObject().put("t", it.title).put("u", it.url).put("ts", it.time).put("c", it.visits))
         }
         prefs(context).edit().putString(KEY, arr.toString()).apply()
     }

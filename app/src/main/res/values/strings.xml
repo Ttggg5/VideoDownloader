@@ -94,4 +94,15 @@
     <string name="incognito_desc">Pages you open in incognito tabs aren\'t saved to your history. Their cookies and site data are deleted when you close all incognito tabs.</string>
     <string name="incognito_shared_cookies">This phone\'s WebView can\'t keep incognito cookies separate; history is still not saved.</string>
     <string name="suggestion_fill">Edit this suggestion</string>
+    <string name="speed_dial">Speed dial</string>
+    <string name="add_site">Add site</string>
+    <string name="edit_site">Edit site</string>
+    <string name="site_name">Name</string>
+    <string name="site_url">Address</string>
+    <string name="pin">Pin to speed dial</string>
+    <string name="unpin">Unpin</string>
+    <string name="edit">Edit</string>
+    <string name="remove">Remove</string>
+    <string name="site_removed">Removed from speed dial</string>
+    <string name="save">Save</string>
 </resources>

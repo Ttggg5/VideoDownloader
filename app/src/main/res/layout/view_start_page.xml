@@ -83,7 +83,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="32dp"
             android:paddingHorizontal="28dp"
-            android:text="@string/bookmarks"
+            android:text="@string/speed_dial"
             android:textAppearance="?attr/textAppearanceTitleMedium"
             android:textColor="?attr/colorOnSurface" />
 
