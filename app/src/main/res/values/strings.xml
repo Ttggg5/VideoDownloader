@@ -88,4 +88,5 @@
     <string name="find_next">Next match</string>
     <string name="text_size">Text size</string>
     <string name="text_size_preview">The quick brown fox jumps over the lazy dog.</string>
+    <string name="opt_restore_tabs">Reopen tabs on startup</string>
 </resources>

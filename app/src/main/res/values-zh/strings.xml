@@ -88,4 +88,5 @@
     <string name="find_next">下一个</string>
     <string name="text_size">文字大小</string>
     <string name="text_size_preview">这是文字大小的预览。</string>
+    <string name="opt_restore_tabs">启动时恢复标签页</string>
 </resources>

@@ -147,10 +147,48 @@ class MainActivity : AppCompatActivity() {
         setupUi()
         setupBackNavigation()
 
-        val initial = resolveInitialUrl(intent) ?: homeUrl
-        addTabAndSelect(createTab(initial))
+        val shared = resolveInitialUrl(intent)
+        val restored = prefs.getBoolean("restore_tabs", true) && restoreSession()
+        when {
+            shared != null -> addTabAndSelect(createTab(shared))
+            !restored -> addTabAndSelect(createTab(homeUrl))
+        }
 
         if (savedInstanceState == null) checkForUpdatesQuietly()
+    }
+
+    // ------------------------------------------------------------- Session
+
+    /** Tabs worth reopening next time: real pages only (no blank start pages). */
+    private fun sessionTabs(): List<Tab> =
+        tabs.filter { !it.showingStart && (it.pendingUrl ?: it.url).isNotBlank() }
+
+    private fun saveSession() {
+        if (tabs.isEmpty()) return
+        val keep = sessionTabs()
+        Session.save(
+            this,
+            keep.map { Session.SavedTab(it.pendingUrl ?: it.url, it.title, it.groupId) },
+            keep.indexOf(currentTab).coerceAtLeast(0)
+        )
+    }
+
+    /**
+     * Rebuild last session's tabs. Only the selected one loads now; the rest
+     * load the first time they're opened, so startup stays quick.
+     */
+    private fun restoreSession(): Boolean {
+        val saved = Session.load(this) ?: return false
+        saved.tabs.forEach { s ->
+            val tab = createTab(null)
+            tab.url = s.url
+            tab.title = s.title.ifBlank { s.url }
+            tab.groupId = s.group
+            tab.pendingUrl = s.url
+            tabs.add(tab)
+        }
+        selectTab(saved.current)
+        return true
     }
 
     // ------------------------------------------------------------- Updates
@@ -319,6 +357,10 @@ class MainActivity : AppCompatActivity() {
         if (index !in tabs.indices) return
         tabs.firstOrNull { it.webView.parent === binding.webContainer }?.let { capturePreview(it) }
         currentIndex = index
+        currentTab.pendingUrl?.let { url ->
+            currentTab.pendingUrl = null
+            currentTab.webView.loadUrl(url)
+        }
         val web = currentTab.webView
         (web.parent as? ViewGroup)?.removeView(web)
         binding.webContainer.removeAllViews()
@@ -1285,6 +1327,13 @@ class MainActivity : AppCompatActivity() {
             prefs().edit().putBoolean("desktop", desktopMode).apply()
             applyDesktopMode()
         }
+        val restoreSwitch =
+            content.findViewById<com.google.android.material.materialswitch.MaterialSwitch>(R.id.optRestoreSwitch)
+        restoreSwitch.isChecked = prefs().getBoolean("restore_tabs", true)
+        content.findViewById<View>(R.id.optRestore).setOnClickListener {
+            restoreSwitch.isChecked = !restoreSwitch.isChecked
+            prefs().edit().putBoolean("restore_tabs", restoreSwitch.isChecked).apply()
+        }
         val textSizeValue = content.findViewById<TextView>(R.id.optTextSizeValue)
         textSizeValue.text = "$textZoom%"
         content.findViewById<View>(R.id.optTextSize).setOnClickListener {
@@ -1566,6 +1615,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onPause() {
         super.onPause()
+        saveSession()
         statusHandler.removeCallbacks(statusUpdater)
         CookieManager.getInstance().flush()
     }

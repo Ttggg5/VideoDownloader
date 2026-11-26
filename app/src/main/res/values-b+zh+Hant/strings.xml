@@ -88,4 +88,5 @@
     <string name="find_next">下一個</string>
     <string name="text_size">文字大小</string>
     <string name="text_size_preview">這是文字大小的預覽。</string>
+    <string name="opt_restore_tabs">啟動時還原分頁</string>
 </resources>
