@@ -114,4 +114,20 @@
     <string name="rename_group">重新命名群組</string>
     <string name="ungroup">取消群組</string>
     <plurals name="group_tab_count"><item quantity="other">%1$d 個分頁</item></plurals>
+    <string name="downloads_in_progress">下載中</string>
+    <string name="downloads_completed">已完成</string>
+    <string name="filter_all">全部</string>
+    <string name="filter_videos">影片</string>
+    <string name="filter_other">其他</string>
+    <string name="open">開啟</string>
+    <string name="share">分享</string>
+    <string name="delete_file_title">刪除此檔案？</string>
+    <string name="delete_file_msg">「%1$s」將從裝置中刪除。</string>
+    <string name="file_unknown">檔案位置不明</string>
+    <string name="file_missing">找不到檔案</string>
+    <string name="no_app_to_open">沒有應用程式可以開啟此檔案</string>
+    <string name="clear_list">清除清單</string>
+    <string name="state_failed">失敗</string>
+    <string name="state_canceled">已取消</string>
+    <string name="file_deleted">檔案已刪除</string>
 </resources>

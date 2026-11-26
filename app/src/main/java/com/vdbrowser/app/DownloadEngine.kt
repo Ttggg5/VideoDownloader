@@ -65,6 +65,8 @@ object DownloadEngine {
                         singleStream(job, item, dest.channel)
                 }
                 dest.finish()
+                item.savedUri = dest.location
+                item.mime = job.mimeType
             } catch (c: CancellationException) {
                 dest.abort()
                 item.state = Downloads.State.CANCELED
@@ -209,6 +211,7 @@ object DownloadEngine {
     // --------------------------------------------------------- destination
 
     private class Dest(
+        val location: String,
         val channel: FileChannel,
         val finish: () -> Unit,
         val abort: () -> Unit
@@ -227,6 +230,7 @@ object DownloadEngine {
             val pfd = resolver.openFileDescriptor(uri, "rw") ?: return null
             val channel = FileOutputStream(pfd.fileDescriptor).channel
             Dest(
+                location = uri.toString(),
                 channel = channel,
                 finish = {
                     runCatching { channel.force(true); channel.close(); pfd.close() }
@@ -246,6 +250,7 @@ object DownloadEngine {
             val raf = RandomAccessFile(file, "rw")
             val channel = raf.channel
             Dest(
+                location = file.absolutePath,
                 channel = channel,
                 finish = {
                     runCatching { channel.force(true); raf.close() }

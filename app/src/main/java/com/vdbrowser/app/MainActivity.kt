@@ -809,7 +809,7 @@ class MainActivity : AppCompatActivity() {
         }
         binding.btnTabs.setOnClickListener { showTabSwitcher() }
         binding.btnMenu.setOnClickListener { showOverflowMenu() }
-        binding.dlStatus.setOnClickListener { showDownloadsDialog() }
+        binding.dlStatus.setOnClickListener { openDownloadsPage() }
         setupFindBar()
         binding.startPage.startSearch.setOnClickListener {
             binding.urlBar.requestFocus()
@@ -1455,15 +1455,19 @@ class MainActivity : AppCompatActivity() {
         action(R.id.menuNewIncognito) { openNewTab(incognito = true) }
         action(R.id.menuBookmarks) { showBookmarks() }
         action(R.id.menuHistoryPages) { showBrowsingHistory() }
-        action(R.id.menuDownloads) { showDownloadsDialog() }
+        action(R.id.menuDownloads) { openDownloadsPage() }
         action(R.id.menuRefresh) { currentTab.webView.reload() }
         action(R.id.menuShare) { sharePage() }
         action(R.id.menuCopyLink) { copyPageLink() }
         action(R.id.menuFind) { openFindBar() }
         action(R.id.menuBookmarkAdd) { toggleBookmark(); updateBookmarkIcon() }
-        action(R.id.menuHistory) { showHistory() }
+        action(R.id.menuHistory) { openDownloadsPage() }
         action(R.id.menuOptions) { showOptions() }
         sheet.show()
+    }
+
+    private fun openDownloadsPage() {
+        startActivity(Intent(this, DownloadsActivity::class.java))
     }
 
     // ------------------------------------------------ Share / find / zoom
@@ -1826,71 +1830,6 @@ class MainActivity : AppCompatActivity() {
             .show()
     }
 
-    /** Bottom sheet that polls the download store and shows live progress for each download. */
-    private fun showDownloadsDialog() {
-        val sheet = BottomSheetDialog(this)
-        val content = layoutInflater.inflate(R.layout.dialog_downloads, null)
-        sheet.setContentView(content)
-
-        val recycler = content.findViewById<RecyclerView>(R.id.downloadsList)
-        val empty = content.findViewById<View>(R.id.downloadsEmpty)
-        recycler.layoutManager = LinearLayoutManager(this)
-        val adapter = DownloadProgressAdapter(
-            emptyList(),
-            onPause = { id -> Downloads.pause(id) },
-            onResume = { id -> Downloads.resume(id) },
-            onCancel = { id -> Downloads.cancel(id) }
-        )
-        recycler.adapter = adapter
-
-        val handler = Handler(Looper.getMainLooper())
-        val refresh = object : Runnable {
-            override fun run() {
-                // Only show in-flight downloads; finished ones (done/failed/
-                // canceled) move to history.
-                val statuses = Downloads.snapshot().filter {
-                    it.state == Downloads.State.RUNNING ||
-                        it.state == Downloads.State.PAUSED
-                }
-                empty.visibility = if (statuses.isEmpty()) View.VISIBLE else View.GONE
-                recycler.visibility = if (statuses.isEmpty()) View.GONE else View.VISIBLE
-                adapter.submit(statuses)
-                handler.postDelayed(this, 700)
-            }
-        }
-        sheet.setOnShowListener { handler.post(refresh) }
-        sheet.setOnDismissListener { handler.removeCallbacks(refresh) }
-        sheet.show()
-    }
-
-    private fun showHistory() {
-        val sheet = BottomSheetDialog(this)
-        val content = layoutInflater.inflate(R.layout.sheet_history, null)
-        sheet.setContentView(content)
-
-        val recycler = content.findViewById<RecyclerView>(R.id.historyList)
-        val empty = content.findViewById<View>(R.id.historyEmpty)
-        val clear = content.findViewById<View>(R.id.btnClearHistory)
-        val items = DownloadHistory.all(this)
-
-        fun render(list: List<DownloadHistory.Entry>) {
-            if (list.isEmpty()) {
-                recycler.visibility = View.GONE
-                empty.visibility = View.VISIBLE
-            } else {
-                recycler.visibility = View.VISIBLE
-                empty.visibility = View.GONE
-                recycler.layoutManager = LinearLayoutManager(this)
-                recycler.adapter = HistoryAdapter(list)
-            }
-        }
-        render(items)
-        clear.setOnClickListener {
-            DownloadHistory.clear(this)
-            render(emptyList())
-        }
-        sheet.show()
-    }
 
     private fun updateBadge() {
         val count = currentTab.sniffer.countPassing(minSizeBytes)

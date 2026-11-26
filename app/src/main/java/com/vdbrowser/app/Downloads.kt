@@ -23,6 +23,10 @@ object Downloads {
         @Volatile var cancelled: Boolean = false
         @Volatile var resumable: Boolean = false
 
+        /** Where the finished file was saved: a content:// URI (API 29+) or a file path. */
+        @Volatile var savedUri: String? = null
+        @Volatile var mime: String? = null
+
         // Sampling state for speed calculation.
         @Volatile var lastBytes: Long = 0L
         @Volatile var lastTime: Long = 0L

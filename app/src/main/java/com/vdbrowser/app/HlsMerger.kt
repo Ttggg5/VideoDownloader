@@ -53,6 +53,10 @@ object HlsMerger {
 
             val args = buildArgs(job, output)
             val ok = runFfmpeg(args, item)
+            if (ok) {
+                item.savedUri = uri?.toString() ?: outFile?.absolutePath
+                item.mime = "video/mp4"
+            }
 
             if (uri != null) {
                 if (ok) {

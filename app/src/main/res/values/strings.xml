@@ -114,4 +114,20 @@
     <string name="rename_group">Rename group</string>
     <string name="ungroup">Ungroup</string>
     <plurals name="group_tab_count"><item quantity="one">%1$d tab</item><item quantity="other">%1$d tabs</item></plurals>
+    <string name="downloads_in_progress">In progress</string>
+    <string name="downloads_completed">Completed</string>
+    <string name="filter_all">All</string>
+    <string name="filter_videos">Videos</string>
+    <string name="filter_other">Other</string>
+    <string name="open">Open</string>
+    <string name="share">Share</string>
+    <string name="delete_file_title">Delete this file?</string>
+    <string name="delete_file_msg">“%1$s” will be deleted from your device.</string>
+    <string name="file_unknown">File location unknown</string>
+    <string name="file_missing">File not found</string>
+    <string name="no_app_to_open">No app can open this file</string>
+    <string name="clear_list">Clear list</string>
+    <string name="state_failed">Failed</string>
+    <string name="state_canceled">Canceled</string>
+    <string name="file_deleted">File deleted</string>
 </resources>

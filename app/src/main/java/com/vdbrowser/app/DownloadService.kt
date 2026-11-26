@@ -81,7 +81,8 @@ class DownloadService : Service() {
                 DownloadEngine.download(applicationContext, job, item)
             }
             DownloadHistory.record(
-                applicationContext, item.title, item.downloaded.get(), item.state.name
+                applicationContext, item.title, item.downloaded.get(), item.state.name,
+                item.savedUri, item.mime
             )
             if (active.decrementAndGet() <= 0) handler.post { finishIfIdle() }
         }

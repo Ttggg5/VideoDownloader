@@ -114,4 +114,20 @@
     <string name="rename_group">重命名分组</string>
     <string name="ungroup">取消分组</string>
     <plurals name="group_tab_count"><item quantity="other">%1$d 个标签页</item></plurals>
+    <string name="downloads_in_progress">下载中</string>
+    <string name="downloads_completed">已完成</string>
+    <string name="filter_all">全部</string>
+    <string name="filter_videos">视频</string>
+    <string name="filter_other">其他</string>
+    <string name="open">打开</string>
+    <string name="share">分享</string>
+    <string name="delete_file_title">删除此文件？</string>
+    <string name="delete_file_msg">“%1$s”将从设备中删除。</string>
+    <string name="file_unknown">文件位置未知</string>
+    <string name="file_missing">找不到文件</string>
+    <string name="no_app_to_open">没有可打开此文件的应用</string>
+    <string name="clear_list">清除列表</string>
+    <string name="state_failed">失败</string>
+    <string name="state_canceled">已取消</string>
+    <string name="file_deleted">文件已删除</string>
 </resources>
