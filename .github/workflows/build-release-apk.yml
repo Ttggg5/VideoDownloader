@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build:
@@ -46,7 +46,7 @@ jobs:
           RELEASE_KEYSTORE_PASSWORD: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
           RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
           RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
-        run: ./gradlew assembleRelease --no-daemon --stacktrace
+        run: ./gradlew assembleRelease -PvdVersionCode=${{ github.run_number }} --no-daemon --stacktrace
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
@@ -54,3 +54,18 @@ jobs:
           name: video-downloader-release-apk
           path: app/build/outputs/apk/release/*.apk
           if-no-files-found: error
+
+      # Only properly signed builds become releases: a throwaway-key build
+      # could never install as an update over the app.
+      - name: Publish release
+        if: ${{ env.RELEASE_KEYSTORE_PATH != '' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: v1.0.${{ github.run_number }}
+          NOTES: ${{ github.event.head_commit.message }}
+        run: |
+          apk=$(ls app/build/outputs/apk/release/*.apk | head -n 1)
+          cp "$apk" "VideoDownloader-$VERSION.apk"
+          gh release create "$VERSION" "VideoDownloader-$VERSION.apk" \
+            --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
+            --title "$VERSION" --notes "${NOTES:-Automated build $VERSION}" --latest

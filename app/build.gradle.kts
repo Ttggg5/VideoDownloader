@@ -23,8 +23,9 @@ android {
         applicationId = "com.vdbrowser.app"
         minSdk = 24
         targetSdk = 34
-        versionCode = 1
-        versionName = "1.0"
+        // CI passes its run number, so every published build has a higher code.
+        versionCode = (project.findProperty("vdVersionCode") as String?)?.toIntOrNull() ?: 1
+        versionName = "1.0.$versionCode"
 
         // FFmpeg native libs are large; ship only the ABIs real phones use.
         ndk {
@@ -67,6 +68,7 @@ android {
     }
     buildFeatures {
         viewBinding = true
+        buildConfig = true
     }
 }
 
