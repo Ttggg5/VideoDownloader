@@ -97,6 +97,48 @@
         </LinearLayout>
 
         <LinearLayout
+            android:id="@+id/menuShare"
+            style="@style/ListRow.Compact"
+            android:paddingStart="24dp">
+
+            <ImageView
+                style="@style/MenuRowIcon"
+                android:src="@drawable/ic_share" />
+
+            <TextView
+                style="@style/ListTitle"
+                android:text="@string/share_page" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/menuCopyLink"
+            style="@style/ListRow.Compact"
+            android:paddingStart="24dp">
+
+            <ImageView
+                style="@style/MenuRowIcon"
+                android:src="@drawable/ic_content_copy" />
+
+            <TextView
+                style="@style/ListTitle"
+                android:text="@string/copy_link" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/menuFind"
+            style="@style/ListRow.Compact"
+            android:paddingStart="24dp">
+
+            <ImageView
+                style="@style/MenuRowIcon"
+                android:src="@drawable/ic_find_in_page" />
+
+            <TextView
+                style="@style/ListTitle"
+                android:text="@string/find_in_page" />
+        </LinearLayout>
+
+        <LinearLayout
             android:id="@+id/menuBookmarkAdd"
             style="@style/ListRow.Compact"
             android:paddingStart="24dp">

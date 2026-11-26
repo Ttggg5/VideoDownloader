@@ -81,4 +81,11 @@
     <string name="update_failed">Update download failed</string>
     <string name="checking">Checking…</string>
     <string name="update_size">Size: %1$s</string>
+    <string name="share_page">Share page</string>
+    <string name="find_in_page">Find in page</string>
+    <string name="find_hint">Find in page</string>
+    <string name="find_prev">Previous match</string>
+    <string name="find_next">Next match</string>
+    <string name="text_size">Text size</string>
+    <string name="text_size_preview">The quick brown fox jumps over the lazy dog.</string>
 </resources>

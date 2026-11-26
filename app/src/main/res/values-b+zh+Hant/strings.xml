@@ -81,4 +81,11 @@
     <string name="update_failed">更新下載失敗</string>
     <string name="checking">正在檢查…</string>
     <string name="update_size">大小：%1$s</string>
+    <string name="share_page">分享網頁</string>
+    <string name="find_in_page">在網頁中尋找</string>
+    <string name="find_hint">在網頁中尋找</string>
+    <string name="find_prev">上一個</string>
+    <string name="find_next">下一個</string>
+    <string name="text_size">文字大小</string>
+    <string name="text_size_preview">這是文字大小的預覽。</string>
 </resources>

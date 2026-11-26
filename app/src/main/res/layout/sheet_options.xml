@@ -79,6 +79,20 @@
                     android:clickable="false"
                     android:focusable="false" />
             </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/optTextSize"
+                style="@style/OptionRow">
+
+                <ImageView style="@style/OptionIcon" android:src="@drawable/ic_text_size" />
+
+                <LinearLayout style="@style/OptionText">
+
+                    <TextView style="@style/OptionLabel" android:text="@string/text_size" />
+
+                    <TextView android:id="@+id/optTextSizeValue" style="@style/OptionValue" />
+                </LinearLayout>
+            </LinearLayout>
         </LinearLayout>
 
         <!-- Downloads -->

@@ -69,6 +69,7 @@ class MainActivity : AppCompatActivity() {
     private var minSizeBytes = 0L
     private var desktopMode = false
     private var searchEngine = "google"
+    private var textZoom = 100
 
     private val mobileUa by lazy {
         WebSettings.getDefaultUserAgent(this).replace("; wv", "")
@@ -137,6 +138,7 @@ class MainActivity : AppCompatActivity() {
         minSizeBytes = prefs.getLong("min_size", 0L)
         desktopMode = prefs.getBoolean("desktop", false)
         searchEngine = prefs.getString("search_engine", "google") ?: "google"
+        textZoom = prefs.getInt("text_zoom", 100)
         currentUa = if (desktopMode) DESKTOP_UA else mobileUa
         AdBlocker.init(applicationContext)
 
@@ -328,6 +330,7 @@ class MainActivity : AppCompatActivity() {
         updateTabCount()
         updateBookmarkIcon()
         updateStartPage()
+        closeFindBar()
         scrollAccum = 0
         showBar()
     }
@@ -465,6 +468,7 @@ class MainActivity : AppCompatActivity() {
             setSupportMultipleWindows(true)
             javaScriptCanOpenWindowsAutomatically = true
             userAgentString = if (desktopMode) DESKTOP_UA else mobileUa
+            textZoom = this@MainActivity.textZoom
         }
         CookieManager.getInstance().setAcceptCookie(true)
         CookieManager.getInstance().setAcceptThirdPartyCookies(web, true)
@@ -472,9 +476,16 @@ class MainActivity : AppCompatActivity() {
         web.addJavascriptInterface(JsBridge(tab), "VDBridge")
         web.setOnScrollChangeListener { _, _, y, _, oldY -> onPageScrolled(tab, y, oldY) }
 
+        web.setFindListener { active, count, done ->
+            if (tab === currentTab && done) {
+                binding.findCount.text = if (count == 0) "0/0" else "${active + 1}/$count"
+            }
+        }
+
         web.webViewClient = object : WebViewClient() {
             override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
                 super.onPageStarted(view, url, favicon)
+                if (tab === currentTab) closeFindBar()
                 tab.sniffer.clear()
                 tab.url = url ?: ""
                 tab.favicon = null
@@ -625,6 +636,7 @@ class MainActivity : AppCompatActivity() {
         binding.btnTabs.setOnClickListener { showTabSwitcher() }
         binding.btnMenu.setOnClickListener { showOverflowMenu() }
         binding.dlStatus.setOnClickListener { showDownloadsDialog() }
+        setupFindBar()
         binding.startPage.startSearch.setOnClickListener {
             binding.urlBar.requestFocus()
             (getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager)
@@ -662,6 +674,7 @@ class MainActivity : AppCompatActivity() {
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
                 when {
+                    binding.findBar.visibility == View.VISIBLE -> closeFindBar()
                     currentTab.webView.canGoBack() -> currentTab.webView.goBack()
                     tabs.size > 1 -> closeTab(currentIndex)
                     else -> finish()
@@ -1025,10 +1038,112 @@ class MainActivity : AppCompatActivity() {
         action(R.id.menuHistoryPages) { showBrowsingHistory() }
         action(R.id.menuDownloads) { showDownloadsDialog() }
         action(R.id.menuRefresh) { currentTab.webView.reload() }
+        action(R.id.menuShare) { sharePage() }
+        action(R.id.menuCopyLink) { copyPageLink() }
+        action(R.id.menuFind) { openFindBar() }
         action(R.id.menuBookmarkAdd) { toggleBookmark(); updateBookmarkIcon() }
         action(R.id.menuHistory) { showHistory() }
         action(R.id.menuOptions) { showOptions() }
         sheet.show()
+    }
+
+    // ------------------------------------------------ Share / find / zoom
+
+    private fun sharePage() {
+        val url = currentTab.url
+        if (url.isBlank()) return
+        val send = Intent(Intent.ACTION_SEND)
+            .setType("text/plain")
+            .putExtra(Intent.EXTRA_SUBJECT, currentTab.title)
+            .putExtra(Intent.EXTRA_TEXT, url)
+        startActivity(Intent.createChooser(send, getString(R.string.share_page)))
+    }
+
+    private fun copyPageLink() {
+        val url = currentTab.url
+        if (url.isBlank()) return
+        val clip = getSystemService(CLIPBOARD_SERVICE) as ClipboardManager
+        clip.setPrimaryClip(ClipData.newPlainText("url", url))
+        snack(null, getString(R.string.link_copied))
+    }
+
+    private fun setupFindBar() {
+        binding.findInput.addTextChangedListener(object : android.text.TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, a: Int, b: Int, c: Int) {}
+            override fun onTextChanged(s: CharSequence?, a: Int, b: Int, c: Int) {}
+            override fun afterTextChanged(s: android.text.Editable?) {
+                if (binding.findBar.visibility != View.VISIBLE) return
+                val q = s?.toString().orEmpty()
+                if (q.isEmpty()) {
+                    currentTab.webView.clearMatches()
+                    binding.findCount.text = ""
+                } else {
+                    currentTab.webView.findAllAsync(q)
+                }
+            }
+        })
+        binding.findInput.setOnEditorActionListener { _, actionId, _ ->
+            if (actionId == EditorInfo.IME_ACTION_SEARCH) {
+                currentTab.webView.findNext(true); true
+            } else false
+        }
+        binding.findPrev.setOnClickListener { currentTab.webView.findNext(false) }
+        binding.findNext.setOnClickListener { currentTab.webView.findNext(true) }
+        binding.findClose.setOnClickListener { closeFindBar() }
+    }
+
+    private fun openFindBar() {
+        showBar()
+        binding.urlPill.visibility = View.GONE
+        binding.findBar.visibility = View.VISIBLE
+        binding.findCount.text = ""
+        binding.findInput.setText("")
+        binding.findInput.requestFocus()
+        (getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager)
+            .showSoftInput(binding.findInput, InputMethodManager.SHOW_IMPLICIT)
+    }
+
+    private fun closeFindBar() {
+        if (binding.findBar.visibility != View.VISIBLE) return
+        binding.findBar.visibility = View.GONE
+        binding.urlPill.visibility = View.VISIBLE
+        tabs.forEach { it.webView.clearMatches() }
+        (getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager)
+            .hideSoftInputFromWindow(binding.findInput.windowToken, 0)
+    }
+
+    private fun showTextSizeDialog(onChanged: () -> Unit) {
+        val preview = TextView(this).apply {
+            text = getString(R.string.text_size_preview)
+            setTextAppearance(com.google.android.material.R.style.TextAppearance_Material3_BodyLarge)
+            textSize = 16f * textZoom / 100f
+            setPadding(0, 0, 0, dp(12))
+        }
+        val slider = com.google.android.material.slider.Slider(this).apply {
+            valueFrom = 50f
+            valueTo = 200f
+            stepSize = 10f
+            value = textZoom.coerceIn(50, 200).let { (it / 10) * 10 }.toFloat()
+            setLabelFormatter { "${it.toInt()}%" }
+            addOnChangeListener { _, v, _ -> preview.textSize = 16f * v / 100f }
+        }
+        val box = android.widget.LinearLayout(this).apply {
+            orientation = android.widget.LinearLayout.VERTICAL
+            setPadding(dp(24), dp(16), dp(24), 0)
+            addView(preview)
+            addView(slider)
+        }
+        MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.text_size)
+            .setView(box)
+            .setPositiveButton(android.R.string.ok) { _, _ ->
+                textZoom = slider.value.toInt()
+                prefs().edit().putInt("text_zoom", textZoom).apply()
+                tabs.forEach { it.webView.settings.textZoom = textZoom }
+                onChanged()
+            }
+            .setNegativeButton(R.string.cancel, null)
+            .show()
     }
 
     private fun toggleBookmark() {
@@ -1169,6 +1284,11 @@ class MainActivity : AppCompatActivity() {
             desktopSwitch.isChecked = desktopMode
             prefs().edit().putBoolean("desktop", desktopMode).apply()
             applyDesktopMode()
+        }
+        val textSizeValue = content.findViewById<TextView>(R.id.optTextSizeValue)
+        textSizeValue.text = "$textZoom%"
+        content.findViewById<View>(R.id.optTextSize).setOnClickListener {
+            showTextSizeDialog { textSizeValue.text = "$textZoom%" }
         }
         content.findViewById<View>(R.id.optClearData).setOnClickListener {
             clearBrowsingData()
@@ -1376,7 +1496,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun hideBar() {
         val bar = binding.bottomBar ?: return
-        if (barHidden || binding.urlBar.hasFocus()) return
+        if (barHidden || binding.urlBar.hasFocus() || binding.findBar.visibility == View.VISIBLE) return
         barHidden = true
         val margin = (bar.layoutParams as ViewGroup.MarginLayoutParams).bottomMargin
         bar.animate().translationY((bar.height + margin + dp(12)).toFloat())
