@@ -135,6 +135,20 @@
                     <TextView style="@style/OptionLabel" android:text="@string/opt_clear_data" />
                 </LinearLayout>
             </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/optUpdates"
+                style="@style/OptionRow">
+
+                <ImageView style="@style/OptionIcon" android:src="@drawable/ic_refresh" />
+
+                <LinearLayout style="@style/OptionText">
+
+                    <TextView style="@style/OptionLabel" android:text="@string/opt_updates" />
+
+                    <TextView android:id="@+id/optUpdatesValue" style="@style/OptionValue" />
+                </LinearLayout>
+            </LinearLayout>
         </LinearLayout>
     </LinearLayout>
 </androidx.core.widget.NestedScrollView>

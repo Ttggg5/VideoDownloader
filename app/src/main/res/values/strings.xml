@@ -70,4 +70,15 @@
     <string name="undo">Undo</string>
     <string name="tab_closed">Tab closed</string>
     <string name="switch_to_tab">Switch</string>
+    <string name="opt_updates">Check for updates</string>
+    <string name="version_label">Version %1$s</string>
+    <string name="update_available">Update available: v%1$s</string>
+    <string name="update_now">Update</string>
+    <string name="later">Later</string>
+    <string name="update_downloading">Downloading update…</string>
+    <string name="up_to_date">You\'re on the latest version</string>
+    <string name="update_check_failed">Couldn\'t check for updates</string>
+    <string name="update_failed">Update download failed</string>
+    <string name="checking">Checking…</string>
+    <string name="update_size">Size: %1$s</string>
 </resources>

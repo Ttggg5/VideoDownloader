@@ -147,6 +147,94 @@ class MainActivity : AppCompatActivity() {
 
         val initial = resolveInitialUrl(intent) ?: homeUrl
         addTabAndSelect(createTab(initial))
+
+        if (savedInstanceState == null) checkForUpdatesQuietly()
+    }
+
+    // ------------------------------------------------------------- Updates
+
+    /** At most once a day, look for a newer release and offer it. */
+    private fun checkForUpdatesQuietly() {
+        val now = System.currentTimeMillis()
+        if (now - prefs().getLong("last_update_check", 0L) < UPDATE_CHECK_INTERVAL_MS) return
+        Updater.check { result ->
+            if (result !is Updater.CheckResult.Failed) {
+                prefs().edit().putLong("last_update_check", now).apply()
+            }
+            if (result is Updater.CheckResult.Available && !isFinishing) showUpdateDialog(result.update)
+        }
+    }
+
+    private fun showUpdateDialog(update: Updater.Update) {
+        val message = buildString {
+            if (update.size > 0) append(getString(R.string.update_size, formatBytes(update.size)))
+            if (update.notes.isNotBlank()) {
+                if (isNotEmpty()) append("\n\n")
+                append(update.notes)
+            }
+        }
+        MaterialAlertDialogBuilder(this)
+            .setTitle(getString(R.string.update_available, update.versionName))
+            .setMessage(message.ifBlank { null })
+            .setPositiveButton(R.string.update_now) { _, _ -> downloadUpdate(update) }
+            .setNegativeButton(R.string.later, null)
+            .show()
+    }
+
+    private fun downloadUpdate(update: Updater.Update) {
+        val bar = com.google.android.material.progressindicator.LinearProgressIndicator(this).apply {
+            isIndeterminate = true
+            max = 100
+        }
+        val box = FrameLayout(this).apply {
+            setPadding(dp(24), dp(16), dp(24), dp(8))
+            addView(bar)
+        }
+        var cancelled = false
+        val dialog = MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.update_downloading)
+            .setView(box)
+            .setCancelable(false)
+            .setNegativeButton(R.string.cancel) { _, _ -> cancelled = true }
+            .show()
+
+        Updater.download(
+            this, update,
+            isCancelled = { cancelled },
+            onProgress = { pct ->
+                // Determinate mode can only be switched on, never back off, while visible.
+                if (pct >= 0) {
+                    if (bar.isIndeterminate) bar.isIndeterminate = false
+                    bar.setProgressCompat(pct, true)
+                }
+            },
+            onDone = { file ->
+                if (dialog.isShowing) dialog.dismiss()
+                when {
+                    file != null -> Updater.install(this, file)
+                    !cancelled -> snack(null, getString(R.string.update_failed))
+                }
+            }
+        )
+    }
+
+    /** Manual check from Options; [status] shows progress and the current version. */
+    private fun checkForUpdatesNow(host: View, status: TextView) {
+        status.text = getString(R.string.checking)
+        Updater.check { result ->
+            status.text = getString(R.string.version_label, BuildConfig.VERSION_NAME)
+            when (result) {
+                is Updater.CheckResult.Available -> {
+                    prefs().edit().putLong("last_update_check", System.currentTimeMillis()).apply()
+                    showUpdateDialog(result.update)
+                }
+                Updater.CheckResult.UpToDate -> {
+                    prefs().edit().putLong("last_update_check", System.currentTimeMillis()).apply()
+                    snack(host, getString(R.string.up_to_date))
+                }
+                Updater.CheckResult.Failed -> snack(host, getString(R.string.update_check_failed))
+            }
+        }
     }
 
     /**
@@ -1086,6 +1174,11 @@ class MainActivity : AppCompatActivity() {
             clearBrowsingData()
             snack(content, getString(R.string.data_cleared))
         }
+        val updatesValue = content.findViewById<TextView>(R.id.optUpdatesValue)
+        updatesValue.text = getString(R.string.version_label, BuildConfig.VERSION_NAME)
+        content.findViewById<View>(R.id.optUpdates).setOnClickListener {
+            checkForUpdatesNow(content, updatesValue)
+        }
         sheet.show()
     }
 
@@ -1347,6 +1440,8 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         statusHandler.post(statusUpdater)
+        // Back from the "install unknown apps" setting: continue the update.
+        Updater.resumePendingInstall(this)
     }
 
     override fun onPause() {
@@ -1400,6 +1495,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     companion object {
+        private const val UPDATE_CHECK_INTERVAL_MS = 24L * 60 * 60 * 1000
         private const val DESKTOP_UA =
             "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) " +
                 "Chrome/120.0.0.0 Safari/537.36"
