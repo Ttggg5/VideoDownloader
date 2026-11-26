@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    style="@style/ListRow.Compact"
+    android:paddingStart="20dp"
+    android:paddingEnd="4dp"
+    android:paddingVertical="4dp">
+
+    <ImageView
+        android:id="@+id/suggestionIcon"
+        style="@style/MenuRowIcon"
+        android:layout_width="20dp"
+        android:layout_height="20dp"
+        android:layout_marginEnd="18dp" />
+
+    <LinearLayout style="@style/ListText">
+
+        <TextView
+            android:id="@+id/suggestionTitle"
+            style="@style/ListTitle" />
+
+        <TextView
+            android:id="@+id/suggestionSubtitle"
+            style="@style/ListSubtitle"
+            android:textAppearance="?attr/textAppearanceBodySmall" />
+    </LinearLayout>
+
+    <ImageButton
+        android:id="@+id/suggestionFill"
+        style="@style/ListTrailingButton"
+        android:contentDescription="@string/suggestion_fill"
+        android:padding="14dp"
+        android:scaleType="fitCenter"
+        android:src="@drawable/ic_north_west" />
+</LinearLayout>

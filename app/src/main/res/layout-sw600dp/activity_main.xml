@@ -293,6 +293,30 @@
                 app:indicatorColor="?attr/colorPrimary"
                 app:trackColor="@android:color/transparent"
                 app:trackThickness="3dp" />
+
+            <!-- Address-bar suggestions -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/suggestionPanel"
+                style="@style/Widget.Material3.CardView.Elevated"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_gravity="top"
+                android:layout_marginStart="112dp"
+                android:layout_marginEnd="64dp"
+                android:layout_marginTop="4dp"
+                android:visibility="gone"
+                app:cardBackgroundColor="?attr/colorSurfaceContainerHigh"
+                app:cardCornerRadius="24dp"
+                app:cardElevation="6dp">
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/suggestionList"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:overScrollMode="never"
+                    android:paddingVertical="6dp"
+                    android:clipToPadding="false" />
+            </com.google.android.material.card.MaterialCardView>
         </FrameLayout>
     </LinearLayout>
 

@@ -731,7 +731,15 @@ class MainActivity : AppCompatActivity() {
         barHidden = false
         scrollAccum = 0
         binding.bottomBar?.clipToOutline = true
-        binding.urlBar.setOnFocusChangeListener { _, hasFocus -> if (hasFocus) showBar() }
+        binding.urlBar.setOnFocusChangeListener { _, hasFocus ->
+            if (hasFocus) {
+                showBar()
+                localSuggestionSource = null   // re-read history/bookmarks for this edit
+            } else {
+                hideSuggestions()
+            }
+        }
+        setupSuggestions()
         binding.btnBack.setOnClickListener {
             if (currentTab.webView.canGoBack()) currentTab.webView.goBack()
         }
@@ -848,6 +856,89 @@ class MainActivity : AppCompatActivity() {
         binding.btnBookmark.setImageResource(
             if (marked) R.drawable.ic_star else R.drawable.ic_star_border
         )
+    }
+
+    // --------------------------------------------- Address-bar suggestions
+
+    private val suggestHandler = Handler(Looper.getMainLooper())
+    private var suggestRunnable: Runnable? = null
+    private var latestSuggestQuery = ""
+    private var localSuggestionSource: List<Suggestion>? = null
+    private lateinit var suggestionAdapter: SuggestionAdapter
+
+    private fun setupSuggestions() {
+        suggestionAdapter = SuggestionAdapter(
+            onPick = { s -> navigate(s.target) },
+            onFill = { text ->
+                binding.urlBar.setText(text)
+                binding.urlBar.setSelection(text.length)
+            }
+        )
+        // On phones the list grows upward from the bar, best match closest to it.
+        binding.suggestionList.layoutManager =
+            LinearLayoutManager(this, LinearLayoutManager.VERTICAL, binding.bottomBar != null)
+        binding.suggestionList.adapter = suggestionAdapter
+        binding.urlBar.addTextChangedListener(object : android.text.TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, a: Int, b: Int, c: Int) {}
+            override fun onTextChanged(s: CharSequence?, a: Int, b: Int, c: Int) {}
+            override fun afterTextChanged(e: android.text.Editable?) {
+                if (!binding.urlBar.hasFocus()) return
+                scheduleSuggestions(e?.toString().orEmpty().trim())
+            }
+        })
+    }
+
+    private fun scheduleSuggestions(query: String) {
+        suggestRunnable?.let { suggestHandler.removeCallbacks(it) }
+        latestSuggestQuery = query
+        if (query.isEmpty() || query == currentTab.url) { hideSuggestions(); return }
+        val r = Runnable { loadSuggestions(query) }
+        suggestRunnable = r
+        suggestHandler.postDelayed(r, 150)
+    }
+
+    private fun loadSuggestions(query: String) {
+        val source = localSuggestionSource ?: buildLocalSuggestionSource().also { localSuggestionSource = it }
+        val local = source.asSequence()
+            .filter { it.title.contains(query, true) || it.target.contains(query, true) }
+            .distinctBy { it.target }
+            .take(4)
+            .toList()
+        showSuggestions(local)
+        if (currentTab.incognito) return   // don't send incognito typing to the search engine
+        SearchSuggest.fetch(searchEngine, query) { remote ->
+            if (query != latestSuggestQuery || !binding.urlBar.hasFocus()) return@fetch
+            showSuggestions(local + remote.take(5).map { Suggestion(Suggestion.Kind.SEARCH, it, it) })
+        }
+    }
+
+    private fun buildLocalSuggestionSource(): List<Suggestion> =
+        Bookmarks.all(this).map { Suggestion(Suggestion.Kind.BOOKMARK, it.title.ifBlank { it.url }, it.url) } +
+            BrowsingHistory.all(this).map { Suggestion(Suggestion.Kind.HISTORY, it.title.ifBlank { it.url }, it.url) }
+
+    private fun showSuggestions(list: List<Suggestion>) {
+        if (list.isEmpty() || !binding.urlBar.hasFocus()) { hideSuggestions(); return }
+        suggestionAdapter.submit(list)
+        binding.suggestionPanel.visibility = View.VISIBLE
+        // Keep the card inside the space between the screen top and the bar.
+        binding.suggestionPanel.post {
+            val parent = binding.suggestionPanel.parent as? View ?: return@post
+            val lp = binding.suggestionPanel.layoutParams as ViewGroup.MarginLayoutParams
+            val room = parent.height - lp.topMargin - lp.bottomMargin - dp(16)
+            val rv = binding.suggestionList
+            rv.layoutParams.height = ViewGroup.LayoutParams.WRAP_CONTENT
+            rv.measure(
+                View.MeasureSpec.makeMeasureSpec(binding.suggestionPanel.width, View.MeasureSpec.EXACTLY),
+                View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
+            )
+            if (room > 0 && rv.measuredHeight > room) rv.layoutParams.height = room
+            rv.requestLayout()
+        }
+    }
+
+    private fun hideSuggestions() {
+        suggestRunnable?.let { suggestHandler.removeCallbacks(it) }
+        binding.suggestionPanel.visibility = View.GONE
     }
 
     private fun navigate(input: String) {

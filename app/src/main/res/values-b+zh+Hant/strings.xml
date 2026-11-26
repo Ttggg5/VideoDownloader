@@ -93,4 +93,5 @@
     <string name="incognito">無痕模式</string>
     <string name="incognito_desc">在無痕分頁中開啟的網頁不會儲存到歷史記錄。關閉所有無痕分頁後，其 Cookie 和網站資料將會刪除。</string>
     <string name="incognito_shared_cookies">此裝置的 WebView 無法分開保存無痕 Cookie，但仍不會記錄歷史。</string>
+    <string name="suggestion_fill">編輯此建議</string>
 </resources>

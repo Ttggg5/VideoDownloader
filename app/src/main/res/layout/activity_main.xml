@@ -271,6 +271,29 @@
                 app:trackColor="@android:color/transparent"
                 app:trackThickness="3dp" />
         </FrameLayout>
+
+        <!-- Address-bar suggestions -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/suggestionPanel"
+            style="@style/Widget.Material3.CardView.Elevated"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom"
+            android:layout_marginHorizontal="12dp"
+            android:layout_marginBottom="@dimen/fab_bottom_offset"
+            android:visibility="gone"
+            app:cardBackgroundColor="?attr/colorSurfaceContainerHigh"
+            app:cardCornerRadius="24dp"
+            app:cardElevation="6dp">
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/suggestionList"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:overScrollMode="never"
+                android:paddingVertical="6dp"
+                android:clipToPadding="false" />
+        </com.google.android.material.card.MaterialCardView>
     </FrameLayout>
 
     <!-- Draggable floating download button with a count badge -->
