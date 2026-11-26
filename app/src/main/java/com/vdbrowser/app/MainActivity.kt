@@ -86,11 +86,40 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    /** Receives the resolved href from a long-pressed link. */
-    private val linkHandler = Handler(Looper.getMainLooper()) { msg ->
-        val url = msg.data?.getString("url")
-        if (!url.isNullOrBlank()) showLinkMenu(url)
-        true
+    /**
+     * Find the href of a long-pressed image link. requestFocusNodeHref reports
+     * the *focused* node, which can be a link touched earlier, so its answer is
+     * only trusted when its image src matches the pressed image; otherwise the
+     * link is looked up at the touch point in the page.
+     */
+    private fun resolveImageLink(web: WebView, tab: Tab, imageSrc: String?) {
+        val reply = Handler(Looper.getMainLooper()) { msg ->
+            val href = msg.data?.getString("url")
+            val src = msg.data?.getString("src")
+            if (!href.isNullOrBlank() && !imageSrc.isNullOrBlank() && src == imageSrc) {
+                showLinkMenu(href)
+            } else {
+                linkAtTouchPoint(web, tab) { found ->
+                    val url = found ?: imageSrc
+                    if (!url.isNullOrBlank()) showLinkMenu(url)
+                }
+            }
+            true
+        }
+        web.requestFocusNodeHref(reply.obtainMessage())
+    }
+
+    private fun linkAtTouchPoint(web: WebView, tab: Tab, onResult: (String?) -> Unit) {
+        @Suppress("DEPRECATION")
+        val scale = web.scale.takeIf { it > 0f } ?: resources.displayMetrics.density
+        val x = tab.lastTouchX / scale
+        val y = tab.lastTouchY / scale
+        val js = "(function(){var e=document.elementFromPoint($x,$y);" +
+            "var a=e&&e.closest?e.closest('a[href]'):null;return a?a.href:null;})()"
+        web.evaluateJavascript(js) { result ->
+            val href = runCatching { org.json.JSONTokener(result).nextValue() as? String }.getOrNull()
+            onResult(href?.takeIf { it.isNotBlank() })
+        }
     }
 
     private val homeUrl = "https://www.google.com"
@@ -313,6 +342,9 @@ class MainActivity : AppCompatActivity() {
         sheet.setContentView(content)
 
         content.findViewById<TextView>(R.id.linkUrl).text = url
+        // javascript:, mailto:, #... links can't be loaded in a fresh tab.
+        val isWeb = url.startsWith("http://", true) || url.startsWith("https://", true)
+        content.findViewById<View>(R.id.linkOpenNewTab).visibility = if (isWeb) View.VISIBLE else View.GONE
         content.findViewById<View>(R.id.linkOpenNewTab).setOnClickListener {
             openInBackgroundTab(url)
             sheet.dismiss()
@@ -331,7 +363,7 @@ class MainActivity : AppCompatActivity() {
         tabStripAdapter?.notifyDataSetChanged()
     }
 
-    @SuppressLint("SetJavaScriptEnabled")
+    @SuppressLint("SetJavaScriptEnabled", "ClickableViewAccessibility")
     private fun configureWebView(web: WebView, tab: Tab) {
         web.settings.apply {
             javaScriptEnabled = true
@@ -439,16 +471,31 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+        // Remember where the finger went down, for resolving image links below.
+        web.setOnTouchListener { _, event ->
+            if (event.actionMasked == MotionEvent.ACTION_DOWN) {
+                tab.lastTouchX = event.x
+                tab.lastTouchY = event.y
+            }
+            false
+        }
+
         // Long-press a link to open it in a new tab or copy it.
         web.setOnLongClickListener {
-            val type = web.hitTestResult.type
-            if (type == WebView.HitTestResult.SRC_ANCHOR_TYPE ||
-                type == WebView.HitTestResult.SRC_IMAGE_ANCHOR_TYPE
-            ) {
-                web.requestFocusNodeHref(linkHandler.obtainMessage())
-                true
-            } else {
-                false
+            val hit = web.hitTestResult
+            val extra = hit.extra
+            when (hit.type) {
+                // extra is the href of the link under this exact press.
+                WebView.HitTestResult.SRC_ANCHOR_TYPE -> {
+                    if (!extra.isNullOrBlank()) showLinkMenu(extra)
+                    true
+                }
+                // extra is the image's src; the link around it must be looked up.
+                WebView.HitTestResult.SRC_IMAGE_ANCHOR_TYPE -> {
+                    resolveImageLink(web, tab, extra)
+                    true
+                }
+                else -> false
             }
         }
 

@@ -14,4 +14,7 @@ class Tab(val webView: WebView) {
     var preview: android.graphics.Bitmap? = null
     /** True for a fresh "New tab" until it loads its first page. */
     var showingStart: Boolean = false
+    /** Last finger-down position on the page, in view pixels. */
+    var lastTouchX: Float = 0f
+    var lastTouchY: Float = 0f
 }
