@@ -54,6 +54,11 @@ class TabAdapter(
             holder.header.setBackgroundResource(R.drawable.bg_brand_gradient)
             holder.title.setTextColor(Color.WHITE)
             holder.close.setColorFilter(Color.WHITE)
+        } else if (tab.incognito) {
+            val ctx = holder.itemView.context
+            holder.header.setBackgroundColor(androidx.core.content.ContextCompat.getColor(ctx, R.color.incognito_header))
+            holder.title.setTextColor(androidx.core.content.ContextCompat.getColor(ctx, R.color.incognito_on))
+            holder.close.setColorFilter(androidx.core.content.ContextCompat.getColor(ctx, R.color.incognito_on_variant))
         } else {
             holder.header.background = null
             holder.title.setTextColor(

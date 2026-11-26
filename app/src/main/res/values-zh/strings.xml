@@ -89,4 +89,8 @@
     <string name="text_size">文字大小</string>
     <string name="text_size_preview">这是文字大小的预览。</string>
     <string name="opt_restore_tabs">启动时恢复标签页</string>
+    <string name="new_incognito_tab">新建无痕标签页</string>
+    <string name="incognito">无痕模式</string>
+    <string name="incognito_desc">在无痕标签页中打开的网页不会保存到历史记录。关闭所有无痕标签页后，其 Cookie 和网站数据将被删除。</string>
+    <string name="incognito_shared_cookies">此设备的 WebView 无法单独保存无痕 Cookie，但仍不会记录历史。</string>
 </resources>

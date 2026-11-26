@@ -17,6 +17,8 @@ class Tab(val webView: WebView) {
     /** Restored from the last session but not loaded until the tab is first shown. */
     var pendingUrl: String? = null
     var groupId: String? = null
+    /** Private tab: separate cookie profile, never saved to history or the session. */
+    var incognito: Boolean = false
     /** Last finger-down position on the page, in view pixels. */
     var lastTouchX: Float = 0f
     var lastTouchY: Float = 0f

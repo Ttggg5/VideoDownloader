@@ -16,6 +16,16 @@
             style="@style/SheetTitle"
             android:text="@string/tabs" />
 
+        <ImageButton
+            android:id="@+id/btnNewIncognito"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_marginEnd="4dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/new_incognito_tab"
+            android:src="@drawable/ic_incognito"
+            app:tint="?attr/colorOnSurfaceVariant" />
+
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnNewTab"
             style="@style/Widget.Material3.Button.TonalButton.Icon"

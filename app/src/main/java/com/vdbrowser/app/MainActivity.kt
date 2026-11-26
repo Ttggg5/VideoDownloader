@@ -33,6 +33,10 @@ import android.webkit.WebViewClient
 import android.widget.FrameLayout
 import android.widget.TextView
 import com.google.android.material.snackbar.Snackbar
+import com.google.android.material.color.MaterialColors
+import androidx.webkit.ProfileStore
+import androidx.webkit.WebViewCompat
+import androidx.webkit.WebViewFeature
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContracts
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
@@ -58,6 +62,10 @@ class MainActivity : AppCompatActivity() {
     private val barInterpolator = android.view.animation.PathInterpolator(0.4f, 0f, 0.2f, 1f)
     private var badgeTab: Tab? = null
     private var badgeCount = 0
+    private val incognitoProfileSupported by lazy {
+        WebViewFeature.isFeatureSupported(WebViewFeature.MULTI_PROFILE)
+    }
+    private var sharedCookieWarned = false
     /** Tabs closed but still undoable; destroyed when their snackbar ends. */
     private val pendingClosed = mutableListOf<Tab>()
 
@@ -143,6 +151,7 @@ class MainActivity : AppCompatActivity() {
         AdBlocker.init(applicationContext)
 
         isWide = resources.getBoolean(R.bool.is_wide)
+        wipeIncognitoIfDone()   // leftovers if the app was killed with incognito tabs open
         requestNotificationPermissionIfNeeded()
         setupUi()
         setupBackNavigation()
@@ -161,7 +170,7 @@ class MainActivity : AppCompatActivity() {
 
     /** Tabs worth reopening next time: real pages only (no blank start pages). */
     private fun sessionTabs(): List<Tab> =
-        tabs.filter { !it.showingStart && (it.pendingUrl ?: it.url).isNotBlank() }
+        tabs.filter { !it.incognito && !it.showingStart && (it.pendingUrl ?: it.url).isNotBlank() }
 
     private fun saveSession() {
         if (tabs.isEmpty()) return
@@ -315,14 +324,20 @@ class MainActivity : AppCompatActivity() {
     // ---------------------------------------------------------------- Tabs
 
     @SuppressLint("SetJavaScriptEnabled")
-    private fun createTab(url: String?): Tab {
+    private fun createTab(url: String?, incognito: Boolean = false): Tab {
         val web = WebView(this)
+        // The profile must be set before the WebView is used for anything.
+        if (incognito && incognitoProfileSupported) {
+            runCatching { WebViewCompat.setProfile(web, INCOGNITO_PROFILE) }
+        }
         web.layoutParams = FrameLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT,
             ViewGroup.LayoutParams.MATCH_PARENT
         )
         val tab = Tab(web)
+        tab.incognito = incognito
         configureWebView(web, tab)
+        if (incognito && !incognitoProfileSupported) web.settings.cacheMode = WebSettings.LOAD_NO_CACHE
         if (!url.isNullOrBlank()) {
             tab.url = url
             web.loadUrl(url)
@@ -336,8 +351,49 @@ class MainActivity : AppCompatActivity() {
     }
 
     /** A blank tab that shows the start page until it navigates somewhere. */
-    private fun openNewTab() {
-        addTabAndSelect(createTab(null).also { it.showingStart = true })
+    private fun openNewTab(incognito: Boolean = false) {
+        addTabAndSelect(createTab(null, incognito).also { it.showingStart = true })
+        if (incognito && !incognitoProfileSupported && !sharedCookieWarned) {
+            sharedCookieWarned = true
+            snack(null, getString(R.string.incognito_shared_cookies))
+        }
+    }
+
+    /** Once no incognito tab is left, delete its profile: cookies, storage and cache. */
+    private fun wipeIncognitoIfDone() {
+        if (!incognitoProfileSupported) return
+        if (tabs.any { it.incognito } || pendingClosed.any { it.incognito }) return
+        runCatching { ProfileStore.getInstance().deleteProfile(INCOGNITO_PROFILE) }
+    }
+
+    /** Dark bar and address pill for incognito tabs, theme colors otherwise. */
+    private fun applyChromeLook() {
+        val inc = currentTab.incognito
+        val on = if (inc) ContextCompat.getColor(this, R.color.incognito_on)
+        else MaterialColors.getColor(binding.urlBar, com.google.android.material.R.attr.colorOnSurface)
+        val onVar = if (inc) ContextCompat.getColor(this, R.color.incognito_on_variant)
+        else MaterialColors.getColor(binding.urlBar, com.google.android.material.R.attr.colorOnSurfaceVariant)
+        val onVarList = android.content.res.ColorStateList.valueOf(onVar)
+
+        binding.urlPill.setBackgroundResource(if (inc) R.drawable.bg_urlbar_incognito else R.drawable.bg_urlbar)
+        binding.findBar.setBackgroundResource(if (inc) R.drawable.bg_urlbar_incognito else R.drawable.bg_urlbar)
+        binding.urlBar.setTextColor(on)
+        binding.urlBar.setHintTextColor(onVar)
+        binding.findInput.setTextColor(on)
+        binding.findInput.setHintTextColor(onVar)
+        binding.findCount.setTextColor(onVar)
+        binding.urlLeadingIcon.setImageResource(if (inc) R.drawable.ic_incognito else R.drawable.ic_search)
+        listOf(binding.urlLeadingIcon, binding.btnBookmark, binding.findPrev, binding.findNext, binding.findClose)
+            .forEach { androidx.core.widget.ImageViewCompat.setImageTintList(it, onVarList) }
+
+        // On phones the nav buttons sit on the bar itself, so they follow it too.
+        binding.bottomBar?.let { bar ->
+            bar.setBackgroundResource(if (inc) R.drawable.bg_floating_bar_incognito else R.drawable.bg_floating_bar)
+            listOf(binding.btnBack, binding.btnForward, binding.btnMenu)
+                .forEach { androidx.core.widget.ImageViewCompat.setImageTintList(it, onVarList) }
+            binding.tabCount.setTextColor(onVar)
+            binding.tabCount.background?.mutate()?.setTint(onVar)
+        }
     }
 
     private fun updateStartPage() {
@@ -345,6 +401,11 @@ class MainActivity : AppCompatActivity() {
         val show = currentTab.showingStart
         page.root.visibility = if (show) View.VISIBLE else View.GONE
         if (!show) return
+        val inc = currentTab.incognito
+        page.startHero.setBackgroundResource(if (inc) R.drawable.bg_hero_incognito else R.drawable.bg_hero)
+        page.startHeroIcon.setImageResource(if (inc) R.drawable.ic_incognito else R.drawable.ic_download)
+        page.startHeroTitle.setText(if (inc) R.string.incognito else R.string.app_name)
+        page.startHeroSubtitle.visibility = if (inc) View.VISIBLE else View.GONE
         val items = Bookmarks.all(this)
         page.startEmpty.visibility = if (items.isEmpty()) View.VISIBLE else View.GONE
         page.startTiles.layoutManager =
@@ -372,6 +433,7 @@ class MainActivity : AppCompatActivity() {
         updateTabCount()
         updateBookmarkIcon()
         updateStartPage()
+        applyChromeLook()
         closeFindBar()
         scrollAccum = 0
         showBar()
@@ -417,7 +479,10 @@ class MainActivity : AppCompatActivity() {
         snack(
             snackHost, getString(R.string.tab_closed), R.string.undo,
             onEnd = { undone ->
-                if (pendingClosed.remove(tab) && !undone) tab.webView.destroy()
+                if (pendingClosed.remove(tab) && !undone) {
+                    tab.webView.destroy()
+                    if (tab.incognito) wipeIncognitoIfDone()
+                }
             }
         ) {
             val at = index.coerceAtMost(tabs.size)
@@ -553,7 +618,9 @@ class MainActivity : AppCompatActivity() {
                     updateBookmarkIcon()
                 }
                 refreshTabStrip()
-                BrowsingHistory.record(this@MainActivity, view?.title ?: tab.title, tab.url)
+                if (!tab.incognito) {
+                    BrowsingHistory.record(this@MainActivity, view?.title ?: tab.title, tab.url)
+                }
             }
 
             override fun shouldInterceptRequest(
@@ -1056,6 +1123,10 @@ class MainActivity : AppCompatActivity() {
             }
         }).attachToRecyclerView(recycler)
 
+        content.findViewById<View>(R.id.btnNewIncognito).setOnClickListener {
+            openNewTab(incognito = true)
+            sheet.dismiss()
+        }
         content.findViewById<View>(R.id.btnNewTab).setOnClickListener {
             openNewTab()
             sheet.dismiss()
@@ -1076,6 +1147,7 @@ class MainActivity : AppCompatActivity() {
             content.findViewById<View>(id).setOnClickListener { sheet.dismiss(); block() }
         }
         action(R.id.menuNewTab) { openNewTab() }
+        action(R.id.menuNewIncognito) { openNewTab(incognito = true) }
         action(R.id.menuBookmarks) { showBookmarks() }
         action(R.id.menuHistoryPages) { showBrowsingHistory() }
         action(R.id.menuDownloads) { showDownloadsDialog() }
@@ -1649,6 +1721,7 @@ class MainActivity : AppCompatActivity() {
         pendingClosed.clear()
         tabs.forEach { it.webView.destroy() }
         tabs.clear()
+        wipeIncognitoIfDone()
         super.onDestroy()
     }
 
@@ -1665,6 +1738,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     companion object {
+        private const val INCOGNITO_PROFILE = "incognito"
         private const val UPDATE_CHECK_INTERVAL_MS = 24L * 60 * 60 * 1000
         private const val DESKTOP_UA =
             "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) " +

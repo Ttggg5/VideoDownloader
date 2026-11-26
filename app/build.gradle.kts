@@ -79,6 +79,8 @@ dependencies {
     implementation("androidx.constraintlayout:constraintlayout:2.1.4")
     implementation("androidx.recyclerview:recyclerview:1.3.2")
     implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
+    // Separate cookie/storage profile for incognito tabs (on WebView versions that support it).
+    implementation("androidx.webkit:webkit:1.12.1")
     // Maintained fork of the retired FFmpegKit; "https" build = network + HLS
     // demux + mp4 mux, enough to remux HLS/DASH to a real .mp4 by stream copy.
     implementation("com.antonkarpenko:ffmpeg-kit-https:2.1.0")

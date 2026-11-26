@@ -89,4 +89,8 @@
     <string name="text_size">Text size</string>
     <string name="text_size_preview">The quick brown fox jumps over the lazy dog.</string>
     <string name="opt_restore_tabs">Reopen tabs on startup</string>
+    <string name="new_incognito_tab">New incognito tab</string>
+    <string name="incognito">Incognito</string>
+    <string name="incognito_desc">Pages you open in incognito tabs aren\'t saved to your history. Their cookies and site data are deleted when you close all incognito tabs.</string>
+    <string name="incognito_shared_cookies">This phone\'s WebView can\'t keep incognito cookies separate; history is still not saved.</string>
 </resources>

@@ -89,4 +89,8 @@
     <string name="text_size">文字大小</string>
     <string name="text_size_preview">這是文字大小的預覽。</string>
     <string name="opt_restore_tabs">啟動時還原分頁</string>
+    <string name="new_incognito_tab">新增無痕分頁</string>
+    <string name="incognito">無痕模式</string>
+    <string name="incognito_desc">在無痕分頁中開啟的網頁不會儲存到歷史記錄。關閉所有無痕分頁後，其 Cookie 和網站資料將會刪除。</string>
+    <string name="incognito_shared_cookies">此裝置的 WebView 無法分開保存無痕 Cookie，但仍不會記錄歷史。</string>
 </resources>

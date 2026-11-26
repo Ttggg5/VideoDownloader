@@ -83,6 +83,20 @@
             android:layout_marginBottom="8dp" />
 
         <LinearLayout
+            android:id="@+id/menuNewIncognito"
+            style="@style/ListRow.Compact"
+            android:paddingStart="24dp">
+
+            <ImageView
+                style="@style/MenuRowIcon"
+                android:src="@drawable/ic_incognito" />
+
+            <TextView
+                style="@style/ListTitle"
+                android:text="@string/new_incognito_tab" />
+        </LinearLayout>
+
+        <LinearLayout
             android:id="@+id/menuRefresh"
             style="@style/ListRow.Compact"
             android:paddingStart="24dp">

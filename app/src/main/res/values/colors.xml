@@ -6,6 +6,14 @@
     <color name="brand_glow">#FF4D8D</color>
     <color name="ic_launcher_background">#7C4DFF</color>
 
+    <!-- Incognito chrome: always dark, in light and dark mode -->
+    <color name="incognito_bar">#F0231F2B</color>
+    <color name="incognito_pill">#3A3446</color>
+    <color name="incognito_outline">#3F394B</color>
+    <color name="incognito_header">#2D2838</color>
+    <color name="incognito_on">#ECE6F3</color>
+    <color name="incognito_on_variant">#B8B0C6</color>
+
     <!-- Light scheme -->
     <color name="md_primary">#6D3BFF</color>
     <color name="md_on_primary">#FFFFFF</color>
