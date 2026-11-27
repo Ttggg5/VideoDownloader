@@ -11,3 +11,12 @@ fun formatBytes(bytes: Long): String {
     val gb = mb / 1024.0
     return String.format("%.2f GB", gb)
 }
+
+/**
+ * The first web link in shared text, which can be a bare link or a sentence with
+ * one buried in it ("check this out: https://..."). Null when there is none.
+ */
+fun extractUrl(text: String): String? {
+    val matcher = android.util.Patterns.WEB_URL.matcher(text)
+    return if (matcher.find()) text.substring(matcher.start(), matcher.end()) else null
+}

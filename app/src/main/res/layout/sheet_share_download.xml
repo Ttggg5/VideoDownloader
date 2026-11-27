@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingBottom="12dp">
+
+    <com.google.android.material.bottomsheet.BottomSheetDragHandleView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+
+    <LinearLayout
+        style="@style/SheetHeader"
+        android:paddingEnd="20dp">
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                style="@style/SheetTitle"
+                android:layout_width="match_parent"
+                android:text="@string/share_download_label" />
+
+            <TextView
+                android:id="@+id/shareHost"
+                style="@style/ListSubtitle" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/shareCount"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="10dp"
+            android:background="@drawable/bg_brand_gradient_pill"
+            android:gravity="center"
+            android:minWidth="28dp"
+            android:paddingHorizontal="10dp"
+            android:paddingVertical="2dp"
+            android:textAppearance="?attr/textAppearanceLabelLarge"
+            android:textColor="@android:color/white"
+            android:visibility="gone" />
+    </LinearLayout>
+
+    <!-- Shown while the page is being scanned -->
+    <LinearLayout
+        android:id="@+id/shareScanning"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingHorizontal="24dp"
+        android:paddingBottom="12dp">
+
+        <com.google.android.material.progressindicator.LinearProgressIndicator
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:indeterminate="true"
+            app:indicatorColor="?attr/colorPrimary"
+            app:trackCornerRadius="2dp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:text="@string/looking_for_videos"
+            android:textAppearance="?attr/textAppearanceBodyMedium"
+            android:textColor="?attr/colorOnSurface" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:text="@string/play_video_hint"
+            android:textAppearance="?attr/textAppearanceBodySmall"
+            android:textColor="?attr/colorOnSurfaceVariant" />
+    </LinearLayout>
+
+    <!-- Shown when the scan ends with nothing found -->
+    <LinearLayout
+        android:id="@+id/shareEmpty"
+        style="@style/EmptyState"
+        android:paddingBottom="16dp"
+        android:visibility="gone">
+
+        <ImageView
+            style="@style/EmptyStateIcon"
+            android:src="@drawable/ic_download" />
+
+        <TextView
+            style="@style/EmptyStateText"
+            android:text="@string/no_videos_found" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/shareOpenBrowser"
+            style="@style/Widget.Material3.Button.TonalButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="@string/open_in_browser" />
+    </LinearLayout>
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/shareList"
+        style="@style/SheetList"
+        android:paddingHorizontal="12dp" />
+</LinearLayout>

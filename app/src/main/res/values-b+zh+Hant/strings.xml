@@ -130,4 +130,11 @@
     <string name="state_failed">失敗</string>
     <string name="state_canceled">已取消</string>
     <string name="file_deleted">檔案已刪除</string>
+    <string name="share_download_label">下載影片</string>
+    <string name="looking_for_videos">正在尋找影片…</string>
+    <string name="play_video_hint">如果沒有顯示，可能需要先播放影片。</string>
+    <string name="no_videos_found">此網頁中找不到影片。</string>
+    <string name="open_in_browser">在瀏覽器中開啟</string>
+    <string name="downloading_in_background">正在背景下載</string>
+    <string name="no_link_shared">分享的內容中沒有連結</string>
 </resources>

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Holds the invisible scanning WebView; the picker itself is a bottom sheet dialog. -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/scanHost"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent" />

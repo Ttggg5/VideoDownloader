@@ -41,6 +41,16 @@
         <item name="textAppearanceTitleSmall">@style/TextAppearance.VD.TitleSmall</item>
     </style>
 
+    <!-- Transparent window: only the share picker sheet shows over the other app. -->
+    <style name="Theme.VideoDownloader.Translucent">
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:backgroundDimEnabled">false</item>
+        <item name="android:windowAnimationStyle">@null</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+    </style>
+
     <!-- Bolder, tighter headings -->
     <style name="TextAppearance.VD.HeadlineSmall" parent="TextAppearance.Material3.HeadlineSmall">
         <item name="android:fontFamily">sans-serif-medium</item>

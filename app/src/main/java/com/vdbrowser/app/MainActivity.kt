@@ -1031,9 +1031,7 @@ class MainActivity : AppCompatActivity() {
             // A share can carry a bare link or a sentence with a link buried in it
             // ("check this out: https://..."); pull just the URL out when present,
             // otherwise treat the whole text as a search query.
-            val matcher = android.util.Patterns.WEB_URL.matcher(text)
-            val urlPart = if (matcher.find()) text.substring(matcher.start(), matcher.end()) else text
-            return resolveInput(urlPart)
+            return resolveInput(extractUrl(text) ?: text)
         }
         return null
     }
@@ -1049,23 +1047,7 @@ class MainActivity : AppCompatActivity() {
 
     /** Scan the rendered DOM for <video>/<source> elements after the page settles. */
     private fun injectScanner(view: WebView?) {
-        val js = """
-            (function() {
-              try {
-                var add = function(u) {
-                  if (u && u.indexOf('blob:') !== 0 && u.indexOf('data:') !== 0) {
-                    VDBridge.onMediaFound(u);
-                  }
-                };
-                document.querySelectorAll('video').forEach(function(v) {
-                  add(v.currentSrc); add(v.src);
-                  v.querySelectorAll('source').forEach(function(s) { add(s.src); });
-                });
-                document.querySelectorAll('source').forEach(function(s) { add(s.src); });
-              } catch (e) {}
-            })();
-        """.trimIndent()
-        view?.evaluateJavascript(js, null)
+        view?.evaluateJavascript(MediaScanJs.SCRIPT, null)
     }
 
     /** Shows detected media as a popup anchored above the floating download button. */
@@ -1877,24 +1859,8 @@ class MainActivity : AppCompatActivity() {
 
     /** Resolve a detected item's size in the background (drives the badge + filter). */
     private fun fetchSize(item: MediaItem, tab: Tab) {
-        if (item.sizeBytes != MediaItem.SIZE_UNKNOWN) return
-        // Direct files: only size the representative copy. Streams: analyze all,
-        // so we can discover which playlist is the master.
-        if (!item.isStream && !tab.sniffer.isRepresentative(item)) return
-        item.sizeBytes = MediaItem.SIZE_FETCHING
-        if (item.isStream) {
-            HlsSize.analyze(item.url, tab.url, currentUa) { info ->
-                item.isMaster = info.isMaster
-                item.downloadUrl = info.variantUrl
-                if (info.variants.isNotEmpty()) tab.sniffer.addVariants(info.variants)
-                item.sizeBytes = if (info.size > 0) info.size else MediaItem.SIZE_UNKNOWN
-                runOnUiThread { if (tab === currentTab) updateBadge() }
-            }
-        } else {
-            SizeFetcher.fetch(item.url, tab.url, currentUa) { size ->
-                item.sizeBytes = if (size > 0) size else MediaItem.SIZE_UNKNOWN
-                runOnUiThread { if (tab === currentTab) updateBadge() }
-            }
+        MediaSizer.fetch(item, tab.sniffer, tab.url, currentUa) {
+            runOnUiThread { if (tab === currentTab) updateBadge() }
         }
     }
 
@@ -1984,7 +1950,7 @@ class MainActivity : AppCompatActivity() {
     companion object {
         private const val INCOGNITO_PROFILE = "incognito"
         private const val UPDATE_CHECK_INTERVAL_MS = 24L * 60 * 60 * 1000
-        private const val DESKTOP_UA =
+        const val DESKTOP_UA =
             "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) " +
                 "Chrome/120.0.0.0 Safari/537.36"
     }

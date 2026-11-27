@@ -130,4 +130,11 @@
     <string name="state_failed">Failed</string>
     <string name="state_canceled">Canceled</string>
     <string name="file_deleted">File deleted</string>
+    <string name="share_download_label">Download video</string>
+    <string name="looking_for_videos">Looking for videos…</string>
+    <string name="play_video_hint">If nothing shows up, the site may need the video to be played first.</string>
+    <string name="no_videos_found">No videos found on this page.</string>
+    <string name="open_in_browser">Open in browser</string>
+    <string name="downloading_in_background">Downloading in the background</string>
+    <string name="no_link_shared">No link found in what was shared</string>
 </resources>
