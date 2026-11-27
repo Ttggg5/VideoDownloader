@@ -69,6 +69,8 @@
     <string name="detected_media_title">Detected media</string>
     <string name="undo">Undo</string>
     <string name="tab_closed">Tab closed</string>
+    <string name="ad_blocked_redirect">Blocked an ad redirect</string>
+    <string name="ad_blocked_popup">Blocked an ad pop-up</string>
     <string name="switch_to_tab">Switch</string>
     <string name="opt_updates">Check for updates</string>
     <string name="version_label">Version %1$s</string>

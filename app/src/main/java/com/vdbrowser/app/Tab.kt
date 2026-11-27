@@ -22,4 +22,6 @@ class Tab(val webView: WebView) {
     /** Last finger-down position on the page, in view pixels. */
     var lastTouchX: Float = 0f
     var lastTouchY: Float = 0f
+    /** Set while a freshly opened pop-up hasn't reached a real page yet. */
+    var popupOpener: Tab? = null
 }

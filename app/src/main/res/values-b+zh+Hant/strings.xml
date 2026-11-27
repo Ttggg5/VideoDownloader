@@ -69,6 +69,8 @@
     <string name="detected_media_title">偵測到的媒體</string>
     <string name="undo">復原</string>
     <string name="tab_closed">已關閉分頁</string>
+    <string name="ad_blocked_redirect">已封鎖廣告重新導向</string>
+    <string name="ad_blocked_popup">已封鎖廣告彈出視窗</string>
     <string name="switch_to_tab">切換</string>
     <string name="opt_updates">檢查更新</string>
     <string name="version_label">版本 %1$s</string>

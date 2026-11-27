@@ -69,6 +69,8 @@
     <string name="detected_media_title">检测到的媒体</string>
     <string name="undo">撤销</string>
     <string name="tab_closed">已关闭标签页</string>
+    <string name="ad_blocked_redirect">已拦截广告跳转</string>
+    <string name="ad_blocked_popup">已拦截广告弹窗</string>
     <string name="switch_to_tab">切换</string>
     <string name="opt_updates">检查更新</string>
     <string name="version_label">版本 %1$s</string>

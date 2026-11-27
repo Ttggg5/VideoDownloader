@@ -31,6 +31,7 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.FrameLayout
 import android.widget.TextView
+import android.widget.Toast
 import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.color.MaterialColors
 import androidx.webkit.ProfileStore
@@ -472,6 +473,32 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    /** Silently close a pop-up tab that went to an ad, returning to its opener. */
+    private fun discardPopupTab(tab: Tab) {
+        val opener = tab.popupOpener
+        tab.popupOpener = null
+        binding.root.post {
+            val index = tabs.indexOf(tab)
+            if (index < 0) return@post
+            tabs.removeAt(index)
+            (tab.webView.parent as? ViewGroup)?.removeView(tab.webView)
+            if (tabs.isEmpty()) {
+                openNewTab()
+            } else {
+                val openerIndex = opener?.let { tabs.indexOf(it) } ?: -1
+                val target = when {
+                    openerIndex >= 0 -> openerIndex
+                    index < currentIndex -> currentIndex - 1
+                    else -> currentIndex.coerceAtMost(tabs.size - 1)
+                }
+                currentIndex = currentIndex.coerceAtMost(tabs.size - 1)
+                selectTab(target)
+            }
+            tab.webView.destroy()
+            Toast.makeText(this, R.string.ad_blocked_popup, Toast.LENGTH_SHORT).show()
+        }
+    }
+
     /**
      * Close a tab with an Undo snackbar. The WebView is only destroyed once the
      * snackbar goes away without Undo, so restoring keeps the page and history.
@@ -762,7 +789,7 @@ class MainActivity : AppCompatActivity() {
         web.webViewClient = object : WebViewClient() {
             override fun shouldInterceptRequest(view: WebView?, request: WebResourceRequest?): WebResourceResponse? {
                 val u = request?.url?.toString() ?: return null
-                return if (adBlockEnabled && AdBlocker.shouldBlock(u)) AdBlocker.blockedResponse() else null
+                return if (adBlockEnabled && AdBlocker.shouldBlock(u, request.isForMainFrame)) AdBlocker.blockedResponse(u) else null
             }
             override fun onPageStarted(view: WebView?, u: String?, favicon: Bitmap?) {
                 progress.visibility = View.VISIBLE
@@ -827,8 +854,29 @@ class MainActivity : AppCompatActivity() {
         }
 
         web.webViewClient = object : WebViewClient() {
+            override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
+                val target = request?.url?.toString() ?: return false
+                if (!adBlockEnabled || !AdBlocker.isAdHost(target)) {
+                    if (request.isForMainFrame && !target.startsWith("about:")) tab.popupOpener = null
+                    return false
+                }
+                if (tab.popupOpener != null) {
+                    discardPopupTab(tab)
+                } else {
+                    Toast.makeText(this@MainActivity, R.string.ad_blocked_redirect, Toast.LENGTH_SHORT).show()
+                }
+                return true
+            }
+
             override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
                 super.onPageStarted(view, url, favicon)
+                if (adBlockEnabled && url != null && tab.popupOpener != null &&
+                    AdBlocker.isAdHost(url)
+                ) {
+                    discardPopupTab(tab)
+                    return
+                }
+                if (adBlockEnabled) view?.evaluateJavascript(AdBlocker.COSMETIC_JS, null)
                 if (tab === currentTab) closeFindBar()
                 val hadPage = tab.url.isNotBlank()
                 tab.sniffer.clear()
@@ -853,6 +901,8 @@ class MainActivity : AppCompatActivity() {
             override fun onPageFinished(view: WebView?, url: String?) {
                 super.onPageFinished(view, url)
                 tab.url = url ?: tab.url
+                if (adBlockEnabled) view?.evaluateJavascript(AdBlocker.COSMETIC_JS, null)
+                if (url != null && !url.startsWith("about:")) tab.popupOpener = null
                 injectScanner(view)
                 if (tab === currentTab) {
                     updateNavButtons()
@@ -870,8 +920,8 @@ class MainActivity : AppCompatActivity() {
             ): WebResourceResponse? {
                 // Runs on a background thread.
                 val reqUrl = request?.url?.toString() ?: return null
-                if (adBlockEnabled && AdBlocker.shouldBlock(reqUrl)) {
-                    return AdBlocker.blockedResponse()
+                if (adBlockEnabled && AdBlocker.shouldBlock(reqUrl, request.isForMainFrame)) {
+                    return AdBlocker.blockedResponse(reqUrl)
                 }
                 val found = tab.sniffer.consider(reqUrl)
                 if (found != null) {
@@ -910,8 +960,12 @@ class MainActivity : AppCompatActivity() {
                 isUserGesture: Boolean,
                 resultMsg: Message?
             ): Boolean {
+                // Pop-ups the user didn't trigger are ads: block them.
+                if (adBlockEnabled && !isUserGesture) return false
                 // A link with target=_blank or window.open -> open in a new tab.
                 val newTab = createTab(null)
+                // Until it reaches a real page, close it if it turns out to be an ad.
+                if (adBlockEnabled) newTab.popupOpener = tab
                 addTabAndSelect(newTab)
                 val transport = resultMsg?.obj as? WebView.WebViewTransport ?: return false
                 transport.webView = newTab.webView
