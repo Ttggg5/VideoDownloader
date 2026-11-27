@@ -41,6 +41,19 @@
         <item name="textAppearanceTitleSmall">@style/TextAppearance.VD.TitleSmall</item>
     </style>
 
+    <!-- Full-screen dialogs (tab switcher): a page over the browser, not a floating card. -->
+    <style name="Theme.VideoDownloader.FullScreenDialog">
+        <item name="android:windowIsFloating">false</item>
+        <item name="android:windowBackground">?android:attr/colorBackground</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowAnimationStyle">@style/Animation.VD.FullScreen</item>
+    </style>
+
+    <style name="Animation.VD.FullScreen" parent="">
+        <item name="android:windowEnterAnimation">@anim/fullscreen_enter</item>
+        <item name="android:windowExitAnimation">@anim/fullscreen_exit</item>
+    </style>
+
     <!-- Transparent window: only the share picker sheet shows over the other app. -->
     <style name="Theme.VideoDownloader.Translucent">
         <item name="android:windowIsTranslucent">true</item>

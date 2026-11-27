@@ -2,20 +2,33 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
+    android:layout_height="match_parent"
+    android:background="?android:attr/colorBackground"
+    android:fitsSystemWindows="true"
     android:orientation="vertical">
 
-    <com.google.android.material.bottomsheet.BottomSheetDragHandleView
+    <!-- Top app bar -->
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content" />
+        android:layout_height="?attr/actionBarSize"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="4dp"
+        android:paddingEnd="12dp">
 
-    <LinearLayout style="@style/SheetHeader">
+        <ImageButton
+            android:id="@+id/btnTabsClose"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/back"
+            android:src="@drawable/ic_close"
+            app:tint="?attr/colorOnSurface" />
 
         <ImageButton
             android:id="@+id/btnGroupBack"
             android:layout_width="48dp"
             android:layout_height="48dp"
-            android:layout_marginStart="-12dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="@string/back"
             android:src="@drawable/ic_back"
@@ -25,6 +38,7 @@
         <TextView
             android:id="@+id/tabsTitle"
             style="@style/SheetTitle"
+            android:layout_marginStart="8dp"
             android:text="@string/tabs" />
 
         <ImageButton
@@ -66,6 +80,12 @@
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/tabList"
-        style="@style/SheetList"
-        android:paddingHorizontal="10dp" />
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:clipToPadding="false"
+        android:layoutAnimation="@anim/layout_list_enter"
+        android:overScrollMode="never"
+        android:paddingHorizontal="10dp"
+        android:paddingBottom="24dp" />
 </LinearLayout>

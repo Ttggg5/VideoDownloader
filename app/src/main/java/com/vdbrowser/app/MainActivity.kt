@@ -1015,13 +1015,12 @@ class MainActivity : AppCompatActivity() {
     private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
 
     private fun showTabSwitcher() {
-        val sheet = BottomSheetDialog(this)
+        val sheet = android.app.Dialog(this, R.style.Theme_VideoDownloader_FullScreenDialog)
         val content = layoutInflater.inflate(R.layout.sheet_tabs, null)
         sheet.setContentView(content)
+        content.findViewById<View>(R.id.btnTabsClose).setOnClickListener { sheet.dismiss() }
 
         capturePreview(currentTab)
-        sheet.behavior.state = com.google.android.material.bottomsheet.BottomSheetBehavior.STATE_EXPANDED
-        sheet.behavior.skipCollapsed = true
 
         val recycler = content.findViewById<RecyclerView>(R.id.tabList)
         val header = content.findViewById<TextView>(R.id.tabsTitle)
