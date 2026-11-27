@@ -32,6 +32,7 @@ class ShareDownloadActivity : AppCompatActivity() {
     private lateinit var adapter: MediaAdapter
     private var minSizeBytes = 0L
     private var scanning = true
+    private var waitingForClipboard = false
 
     private val notificationPermission =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { /* best effort */ }
@@ -52,14 +53,6 @@ class ShareDownloadActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_share_download)
-
-        val text = intent?.getStringExtra(Intent.EXTRA_TEXT)?.trim().orEmpty()
-        val url = extractUrl(text)?.let { if (it.startsWith("http", ignoreCase = true)) it else "https://$it" }
-        if (url == null) {
-            Toast.makeText(this, R.string.no_link_shared, Toast.LENGTH_SHORT).show()
-            finish()
-            return
-        }
         minSizeBytes = getSharedPreferences("settings", MODE_PRIVATE).getLong("min_size", 0L)
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
@@ -67,13 +60,74 @@ class ShareDownloadActivity : AppCompatActivity() {
         ) {
             notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
+        handleIntent(intent)
+    }
 
+    /** The floating button was tapped again while a scan is open: start over with the new page. */
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        reset()
+        handleIntent(intent)
+    }
+
+    private fun handleIntent(intent: Intent?) {
+        if (intent?.getBooleanExtra(EXTRA_FROM_CLIPBOARD, false) == true) {
+            // Android only lets the focused app read the clipboard, so wait for focus.
+            waitingForClipboard = true
+            if (hasWindowFocus()) readClipboard()
+            return
+        }
+        val text = intent?.getStringExtra(Intent.EXTRA_TEXT)?.trim().orEmpty()
+        val url = toUrl(text)
+        if (url == null) {
+            Toast.makeText(this, R.string.no_link_shared, Toast.LENGTH_SHORT).show()
+            finish()
+            return
+        }
+        begin(url)
+    }
+
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        if (hasFocus && waitingForClipboard) readClipboard()
+    }
+
+    private fun readClipboard() {
+        waitingForClipboard = false
+        val clip = (getSystemService(CLIPBOARD_SERVICE) as android.content.ClipboardManager).primaryClip
+        val text = clip?.takeIf { it.itemCount > 0 }?.getItemAt(0)?.coerceToText(this)?.toString().orEmpty()
+        val url = toUrl(text)
+        if (url == null) {
+            Toast.makeText(this, R.string.copy_link_first, Toast.LENGTH_LONG).show()
+            finish()
+            return
+        }
+        begin(url)
+    }
+
+    private fun toUrl(text: String): String? =
+        extractUrl(text)?.let { if (it.startsWith("http", ignoreCase = true)) it else "https://$it" }
+
+    private fun begin(url: String) {
+        scanning = true
         showSheet(url)
         val s = PageScanner(findViewById<FrameLayout>(R.id.scanHost), url) { /* polled by refresh */ }
         scanner = s
         s.start()
         handler.post(refresh)
         handler.postDelayed(timeout, SCAN_TIMEOUT_MS)
+    }
+
+    private fun reset() {
+        handler.removeCallbacksAndMessages(null)
+        scanner?.stop()
+        scanner = null
+        items.clear()
+        sheet?.setOnDismissListener(null)
+        sheet?.dismiss()
+        sheet = null
+        sheetContent = null
     }
 
     private fun showSheet(url: String) {
@@ -132,15 +186,12 @@ class ShareDownloadActivity : AppCompatActivity() {
     }
 
     override fun onDestroy() {
-        handler.removeCallbacksAndMessages(null)
-        scanner?.stop()
-        scanner = null
-        sheet?.setOnDismissListener(null)
-        sheet?.dismiss()
+        reset()
         super.onDestroy()
     }
 
     companion object {
+        const val EXTRA_FROM_CLIPBOARD = "from_clipboard"
         private const val SCAN_TIMEOUT_MS = 25_000L
     }
 }

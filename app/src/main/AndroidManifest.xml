@@ -68,6 +68,20 @@
             </intent-filter>
         </activity>
 
+        <!-- Floating download button over other apps (reads the browser address bar on tap). -->
+        <service
+            android:name=".FloatingButtonService"
+            android:exported="true"
+            android:label="@string/a11y_service_label"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/floating_button_service" />
+        </service>
+
         <activity
             android:name=".DownloadsActivity"
             android:exported="false"

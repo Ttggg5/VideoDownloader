@@ -137,4 +137,13 @@
     <string name="open_in_browser">在浏览器中打开</string>
     <string name="downloading_in_background">正在后台下载</string>
     <string name="no_link_shared">分享的内容中没有链接</string>
+    <string name="opt_floating_button">悬浮下载按钮</string>
+    <string name="floating_button_title">悬浮下载按钮</string>
+    <string name="floating_button_explain">此按钮会悬浮在其他应用上方。在 Chrome、Firefox、Opera、Edge、三星浏览器等浏览器中打开视频页面时点按它，即可找到该页面中的视频。\n\n为了知道您所在的网页，它需要“无障碍”权限。它只会在您点按按钮时读取浏览器的地址栏。在其他应用中，请先复制视频链接。\n\n在下一个画面中打开“Video Downloader”并将其开启。您可以随时在那里关闭。</string>
+    <string name="open_settings">打开设置</string>
+    <string name="a11y_service_label">Video Downloader 悬浮按钮</string>
+    <string name="a11y_service_desc">在其他应用上方显示悬浮下载按钮。点按时，仅读取当前浏览器的地址栏以查找网页中的视频，不会读取或存储屏幕上的其他内容。</string>
+    <string name="copy_link_first">请先复制视频链接，再点按按钮</string>
+    <string name="floating_button_removed">已隐藏悬浮按钮，可在“选项”中重新开启。</string>
+    <string name="drop_to_hide">拖到此处隐藏</string>
 </resources>

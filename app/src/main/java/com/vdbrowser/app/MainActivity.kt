@@ -1690,6 +1690,25 @@ class MainActivity : AppCompatActivity() {
             prefs().edit().putBoolean("desktop", desktopMode).apply()
             applyDesktopMode()
         }
+        val floatingSwitch =
+            content.findViewById<com.google.android.material.materialswitch.MaterialSwitch>(R.id.optFloatingSwitch)
+        fun floatingOn() =
+            prefs().getBoolean(FloatingButtonService.PREF_ENABLED, false) && FloatingButtonService.isEnabled(this)
+        floatingSwitch.isChecked = floatingOn()
+        content.findViewById<View>(R.id.optFloating).setOnClickListener {
+            if (floatingOn()) {
+                prefs().edit().putBoolean(FloatingButtonService.PREF_ENABLED, false).apply()
+                floatingSwitch.isChecked = false
+            } else {
+                prefs().edit().putBoolean(FloatingButtonService.PREF_ENABLED, true).apply()
+                if (FloatingButtonService.isEnabled(this)) {
+                    floatingSwitch.isChecked = true
+                } else {
+                    sheet.dismiss()
+                    showFloatingButtonSetup()
+                }
+            }
+        }
         val restoreSwitch =
             content.findViewById<com.google.android.material.materialswitch.MaterialSwitch>(R.id.optRestoreSwitch)
         restoreSwitch.isChecked = prefs().getBoolean("restore_tabs", true)
@@ -1712,6 +1731,22 @@ class MainActivity : AppCompatActivity() {
             checkForUpdatesNow(content, updatesValue)
         }
         sheet.show()
+    }
+
+    /** Explain the Accessibility permission, then send the user to turn it on. */
+    private fun showFloatingButtonSetup() {
+        MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.floating_button_title)
+            .setMessage(R.string.floating_button_explain)
+            .setPositiveButton(R.string.open_settings) { _, _ ->
+                runCatching {
+                    startActivity(Intent(android.provider.Settings.ACTION_ACCESSIBILITY_SETTINGS))
+                }
+            }
+            .setNegativeButton(R.string.cancel) { _, _ ->
+                prefs().edit().putBoolean(FloatingButtonService.PREF_ENABLED, false).apply()
+            }
+            .show()
     }
 
     private fun currentLanguageLabel(): String {

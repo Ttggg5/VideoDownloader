@@ -137,4 +137,13 @@
     <string name="open_in_browser">在瀏覽器中開啟</string>
     <string name="downloading_in_background">正在背景下載</string>
     <string name="no_link_shared">分享的內容中沒有連結</string>
+    <string name="opt_floating_button">懸浮下載按鈕</string>
+    <string name="floating_button_title">懸浮下載按鈕</string>
+    <string name="floating_button_explain">此按鈕會懸浮在其他應用程式上方。在 Chrome、Firefox、Opera、Edge、三星網際網路等瀏覽器中開啟影片網頁時點按它，即可找到該網頁中的影片。\n\n為了知道您所在的網頁，它需要「無障礙」權限。它只會在您點按按鈕時讀取瀏覽器的網址列。在其他應用程式中，請先複製影片連結。\n\n在下一個畫面中開啟「Video Downloader」並將其開啟。您可以隨時在那裡關閉。</string>
+    <string name="open_settings">開啟設定</string>
+    <string name="a11y_service_label">Video Downloader 懸浮按鈕</string>
+    <string name="a11y_service_desc">在其他應用程式上方顯示懸浮下載按鈕。點按時，僅讀取目前瀏覽器的網址列以尋找網頁中的影片，不會讀取或儲存螢幕上的其他內容。</string>
+    <string name="copy_link_first">請先複製影片連結，再點按按鈕</string>
+    <string name="floating_button_removed">已隱藏懸浮按鈕，可在「選項」中重新開啟。</string>
+    <string name="drop_to_hide">拖到此處隱藏</string>
 </resources>

@@ -137,4 +137,13 @@
     <string name="open_in_browser">Open in browser</string>
     <string name="downloading_in_background">Downloading in the background</string>
     <string name="no_link_shared">No link found in what was shared</string>
+    <string name="opt_floating_button">Floating download button</string>
+    <string name="floating_button_title">Floating download button</string>
+    <string name="floating_button_explain">The button floats over other apps. Tap it while a video page is open in Chrome, Firefox, Opera, Edge, Samsung Internet or another browser and it finds the videos on that page.\n\nTo know which page you\'re on, it needs the Accessibility permission. It only reads the browser\'s address bar, and only when you tap the button. In other apps, copy the video\'s link first.\n\nIn the next screen, open “Video Downloader” and turn it on. You can turn it off there at any time.</string>
+    <string name="open_settings">Open settings</string>
+    <string name="a11y_service_label">Video Downloader floating button</string>
+    <string name="a11y_service_desc">Shows a floating download button over other apps. When you tap it, it reads only the current browser\'s address bar to find the page\'s videos. Nothing else on screen is read or stored.</string>
+    <string name="copy_link_first">Copy the video\'s link first, then tap the button</string>
+    <string name="floating_button_removed">Floating button hidden. Turn it back on in Options.</string>
+    <string name="drop_to_hide">Drop here to hide</string>
 </resources>
