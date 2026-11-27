@@ -32,7 +32,8 @@ class FloatingButtonService : AccessibilityService() {
     private var bubble: View? = null
     private var bubbleParams: WindowManager.LayoutParams? = null
     private var removeTarget: View? = null
-    private var foregroundPkg: String? = null
+    /** True while one of this app's own screens (other than the share picker) is in front. */
+    private var inOwnApp = false
 
     private val prefListener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
         if (key == PREF_ENABLED) updateBubble()
@@ -46,13 +47,25 @@ class FloatingButtonService : AccessibilityService() {
         if (!prefs.contains(PREF_ENABLED)) prefs.edit().putBoolean(PREF_ENABLED, true).apply()
         prefs.registerOnSharedPreferenceChangeListener(prefListener)
         updateBubble()
+        if (bubble != null) Toast.makeText(this, R.string.floating_button_on, Toast.LENGTH_LONG).show()
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
         if (event?.eventType != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) return
-        val pkg = event.packageName?.toString() ?: return
+        val eventPkg = event.packageName?.toString()
+        // The front app is the active window's. Our bubble and toasts never take
+        // focus, so their own window events must not count as "this app is open"
+        // (that used to hide the bubble the moment it appeared).
+        val pkg = runCatching { rootInActiveWindow?.packageName?.toString() }.getOrNull() ?: eventPkg ?: return
         if (pkg == "com.android.systemui") return   // shade/recents: keep the current state
-        foregroundPkg = pkg
+        if (pkg == packageName) {
+            val cls = event.className?.toString()
+            // Only our real activities decide; overlay/toast/dialog events keep the current state.
+            if (eventPkg != packageName || cls == null || !cls.startsWith("$packageName.")) return
+            inOwnApp = cls != ShareDownloadActivity::class.java.name
+        } else {
+            inOwnApp = false
+        }
         updateBubble()
     }
 
@@ -69,7 +82,7 @@ class FloatingButtonService : AccessibilityService() {
 
     /** Shown when enabled, except inside this app (which has its own download button). */
     private fun updateBubble() {
-        val want = prefs.getBoolean(PREF_ENABLED, false) && foregroundPkg != packageName
+        val want = prefs.getBoolean(PREF_ENABLED, false) && !inOwnApp
         if (want && bubble == null) addBubble() else if (!want && bubble != null) removeBubble()
     }
 

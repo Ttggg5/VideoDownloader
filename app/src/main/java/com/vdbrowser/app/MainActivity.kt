@@ -1743,9 +1743,7 @@ class MainActivity : AppCompatActivity() {
                     startActivity(Intent(android.provider.Settings.ACTION_ACCESSIBILITY_SETTINGS))
                 }
             }
-            .setNegativeButton(R.string.cancel) { _, _ ->
-                prefs().edit().putBoolean(FloatingButtonService.PREF_ENABLED, false).apply()
-            }
+            .setNegativeButton(R.string.cancel, null)
             .show()
     }
 

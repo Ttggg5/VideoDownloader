@@ -146,4 +146,5 @@
     <string name="copy_link_first">请先复制视频链接，再点按按钮</string>
     <string name="floating_button_removed">已隐藏悬浮按钮，可在“选项”中重新开启。</string>
     <string name="drop_to_hide">拖到此处隐藏</string>
+    <string name="floating_button_on">悬浮按钮已开启 — 拖到 ✕ 上即可隐藏</string>
 </resources>
