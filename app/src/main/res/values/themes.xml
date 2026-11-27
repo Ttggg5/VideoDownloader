@@ -330,6 +330,18 @@
         <item name="shapeAppearanceOverlay">@style/ShapeAppearance.VD.Thumb</item>
     </style>
 
+    <style name="MenuRow" parent="ListRow.Compact">
+        <item name="android:paddingStart">24dp</item>
+    </style>
+
+    <style name="MenuIconButton">
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_height">56dp</item>
+        <item name="android:layout_weight">1</item>
+        <item name="android:background">?attr/selectableItemBackgroundBorderless</item>
+        <item name="tint">?attr/colorOnSurface</item>
+    </style>
+
     <!-- Bottom bar navigation buttons -->
     <style name="NavButton">
         <item name="android:layout_width">0dp</item>

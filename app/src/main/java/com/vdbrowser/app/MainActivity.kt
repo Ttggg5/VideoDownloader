@@ -1326,26 +1326,42 @@ class MainActivity : AppCompatActivity() {
         val content = layoutInflater.inflate(R.layout.sheet_menu, null)
         sheet.setContentView(content)
 
-        content.findViewById<android.widget.ImageView>(R.id.menuBookmarkAddIcon).setImageResource(
+        val hasPage = !currentTab.showingStart && currentTab.url.isNotBlank()
+        content.findViewById<android.widget.ImageView>(R.id.menuBookmark).setImageResource(
             if (Bookmarks.isBookmarked(this, currentTab.url)) R.drawable.ic_star else R.drawable.ic_star_border
         )
+        content.findViewById<View>(R.id.menuForward).apply {
+            isEnabled = currentTab.webView.canGoForward()
+            alpha = if (isEnabled) 1f else 0.38f
+        }
+        listOf(R.id.menuBookmark, R.id.menuShare, R.id.menuRefresh).forEach { id ->
+            content.findViewById<View>(id).apply { isEnabled = hasPage; alpha = if (hasPage) 1f else 0.38f }
+        }
+        content.findViewById<View>(R.id.menuFind).visibility = if (hasPage) View.VISIBLE else View.GONE
+        content.findViewById<android.widget.CheckBox>(R.id.menuDesktopCheck).isChecked = desktopMode
 
         fun action(id: Int, block: () -> Unit) {
             content.findViewById<View>(id).setOnClickListener { sheet.dismiss(); block() }
         }
+        action(R.id.menuForward) { currentTab.webView.goForward() }
+        action(R.id.menuBookmark) { toggleBookmark() }
+        action(R.id.menuShare) { sharePage() }
+        action(R.id.menuRefresh) { currentTab.webView.reload() }
         action(R.id.menuNewTab) { openNewTab() }
         action(R.id.menuNewIncognito) { openNewTab(incognito = true) }
-        action(R.id.menuBookmarks) { showBookmarks() }
-        action(R.id.menuHistoryPages) { showBrowsingHistory() }
-        action(R.id.menuDownloads) { openDownloadsPage() }
-        action(R.id.menuRefresh) { currentTab.webView.reload() }
-        action(R.id.menuShare) { sharePage() }
-        action(R.id.menuCopyLink) { copyPageLink() }
+        action(R.id.menuLibrary) { openLibrary() }
         action(R.id.menuFind) { openFindBar() }
-        action(R.id.menuBookmarkAdd) { toggleBookmark(); updateUrlBarIcon() }
-        action(R.id.menuHistory) { openDownloadsPage() }
-        action(R.id.menuOptions) { showOptions() }
+        action(R.id.menuDesktop) {
+            desktopMode = !desktopMode
+            prefs().edit().putBoolean("desktop", desktopMode).apply()
+            applyDesktopMode()
+        }
+        action(R.id.menuSettings) { showOptions() }
         sheet.show()
+    }
+
+    private fun openLibrary() {
+        startActivity(Intent(this, DownloadsActivity::class.java))
     }
 
     private fun openDownloadsPage() {
@@ -1362,14 +1378,6 @@ class MainActivity : AppCompatActivity() {
             .putExtra(Intent.EXTRA_SUBJECT, currentTab.title)
             .putExtra(Intent.EXTRA_TEXT, url)
         startActivity(Intent.createChooser(send, getString(R.string.share_page)))
-    }
-
-    private fun copyPageLink() {
-        val url = currentTab.url
-        if (url.isBlank()) return
-        val clip = getSystemService(CLIPBOARD_SERVICE) as ClipboardManager
-        clip.setPrimaryClip(ClipData.newPlainText("url", url))
-        snack(null, getString(R.string.link_copied))
     }
 
     private fun setupFindBar() {

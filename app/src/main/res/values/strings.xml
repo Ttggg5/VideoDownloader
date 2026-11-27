@@ -148,4 +148,7 @@
     <string name="drop_to_hide">Drop here to hide</string>
     <string name="floating_button_on">Floating button is on — drag it onto ✕ to hide it</string>
     <string name="all_downloads">All downloads</string>
+    <string name="library">Library</string>
+    <string name="library_hint">Bookmarks, history and downloads</string>
+    <string name="settings">Settings</string>
 </resources>

@@ -148,4 +148,7 @@
     <string name="drop_to_hide">拖到此處隱藏</string>
     <string name="floating_button_on">懸浮按鈕已開啟 — 拖到 ✕ 上即可隱藏</string>
     <string name="all_downloads">所有下載</string>
+    <string name="library">資料庫</string>
+    <string name="library_hint">書籤、歷史記錄和下載</string>
+    <string name="settings">設定</string>
 </resources>

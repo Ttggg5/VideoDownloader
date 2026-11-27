@@ -148,4 +148,7 @@
     <string name="drop_to_hide">拖到此处隐藏</string>
     <string name="floating_button_on">悬浮按钮已开启 — 拖到 ✕ 上即可隐藏</string>
     <string name="all_downloads">所有下载</string>
+    <string name="library">资料库</string>
+    <string name="library_hint">书签、历史记录和下载</string>
+    <string name="settings">设置</string>
 </resources>

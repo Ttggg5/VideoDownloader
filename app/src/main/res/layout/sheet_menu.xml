@@ -15,184 +15,118 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content" />
 
-        <!-- Quick actions -->
+        <!-- Page actions -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:paddingHorizontal="12dp"
-            android:paddingBottom="12dp">
+            android:paddingBottom="8dp">
 
-            <LinearLayout
-                android:id="@+id/menuNewTab"
-                style="@style/MenuTile">
+            <ImageButton
+                android:id="@+id/menuForward"
+                style="@style/MenuIconButton"
+                android:contentDescription="@string/forward"
+                android:src="@drawable/ic_forward" />
 
-                <ImageView
-                    style="@style/MenuTileIcon"
-                    android:src="@drawable/ic_add" />
+            <ImageButton
+                android:id="@+id/menuBookmark"
+                style="@style/MenuIconButton"
+                android:contentDescription="@string/menu_bookmark_add"
+                android:src="@drawable/ic_star_border" />
 
-                <TextView
-                    style="@style/MenuTileLabel"
-                    android:text="@string/menu_new_tab" />
-            </LinearLayout>
+            <ImageButton
+                android:id="@+id/menuShare"
+                style="@style/MenuIconButton"
+                android:contentDescription="@string/share_page"
+                android:src="@drawable/ic_share" />
 
-            <LinearLayout
-                android:id="@+id/menuBookmarks"
-                style="@style/MenuTile">
-
-                <ImageView
-                    style="@style/MenuTileIcon"
-                    android:src="@drawable/ic_bookmarks" />
-
-                <TextView
-                    style="@style/MenuTileLabel"
-                    android:text="@string/bookmarks" />
-            </LinearLayout>
-
-            <LinearLayout
-                android:id="@+id/menuHistoryPages"
-                style="@style/MenuTile">
-
-                <ImageView
-                    style="@style/MenuTileIcon"
-                    android:src="@drawable/ic_public" />
-
-                <TextView
-                    style="@style/MenuTileLabel"
-                    android:text="@string/menu_history_pages" />
-            </LinearLayout>
-
-            <LinearLayout
-                android:id="@+id/menuDownloads"
-                style="@style/MenuTile">
-
-                <ImageView
-                    style="@style/MenuTileIcon"
-                    android:src="@drawable/ic_download" />
-
-                <TextView
-                    style="@style/MenuTileLabel"
-                    android:text="@string/downloads" />
-            </LinearLayout>
+            <ImageButton
+                android:id="@+id/menuRefresh"
+                style="@style/MenuIconButton"
+                android:contentDescription="@string/menu_refresh"
+                android:src="@drawable/ic_refresh" />
         </LinearLayout>
 
         <com.google.android.material.divider.MaterialDivider
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginHorizontal="24dp"
             android:layout_marginBottom="8dp" />
 
         <LinearLayout
+            android:id="@+id/menuNewTab"
+            style="@style/MenuRow">
+
+            <ImageView style="@style/MenuRowIcon" android:src="@drawable/ic_add" />
+
+            <TextView style="@style/ListTitle" android:text="@string/menu_new_tab" />
+        </LinearLayout>
+
+        <LinearLayout
             android:id="@+id/menuNewIncognito"
-            style="@style/ListRow.Compact"
-            android:paddingStart="24dp">
+            style="@style/MenuRow">
 
-            <ImageView
-                style="@style/MenuRowIcon"
-                android:src="@drawable/ic_incognito" />
+            <ImageView style="@style/MenuRowIcon" android:src="@drawable/ic_incognito" />
 
-            <TextView
-                style="@style/ListTitle"
-                android:text="@string/new_incognito_tab" />
+            <TextView style="@style/ListTitle" android:text="@string/new_incognito_tab" />
         </LinearLayout>
 
-        <LinearLayout
-            android:id="@+id/menuRefresh"
-            style="@style/ListRow.Compact"
-            android:paddingStart="24dp">
-
-            <ImageView
-                style="@style/MenuRowIcon"
-                android:src="@drawable/ic_refresh" />
-
-            <TextView
-                style="@style/ListTitle"
-                android:text="@string/menu_refresh" />
-        </LinearLayout>
+        <com.google.android.material.divider.MaterialDivider
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginVertical="8dp" />
 
         <LinearLayout
-            android:id="@+id/menuShare"
-            style="@style/ListRow.Compact"
-            android:paddingStart="24dp">
+            android:id="@+id/menuLibrary"
+            style="@style/MenuRow">
 
-            <ImageView
-                style="@style/MenuRowIcon"
-                android:src="@drawable/ic_share" />
+            <ImageView style="@style/MenuRowIcon" android:src="@drawable/ic_bookmarks" />
 
-            <TextView
-                style="@style/ListTitle"
-                android:text="@string/share_page" />
-        </LinearLayout>
+            <LinearLayout style="@style/ListText">
 
-        <LinearLayout
-            android:id="@+id/menuCopyLink"
-            style="@style/ListRow.Compact"
-            android:paddingStart="24dp">
+                <TextView style="@style/ListTitle" android:text="@string/library" />
 
-            <ImageView
-                style="@style/MenuRowIcon"
-                android:src="@drawable/ic_content_copy" />
-
-            <TextView
-                style="@style/ListTitle"
-                android:text="@string/copy_link" />
+                <TextView style="@style/ListSubtitle" android:text="@string/library_hint" />
+            </LinearLayout>
         </LinearLayout>
 
         <LinearLayout
             android:id="@+id/menuFind"
-            style="@style/ListRow.Compact"
-            android:paddingStart="24dp">
+            style="@style/MenuRow">
 
-            <ImageView
-                style="@style/MenuRowIcon"
-                android:src="@drawable/ic_find_in_page" />
+            <ImageView style="@style/MenuRowIcon" android:src="@drawable/ic_find_in_page" />
 
-            <TextView
-                style="@style/ListTitle"
-                android:text="@string/find_in_page" />
+            <TextView style="@style/ListTitle" android:text="@string/find_in_page" />
         </LinearLayout>
 
         <LinearLayout
-            android:id="@+id/menuBookmarkAdd"
-            style="@style/ListRow.Compact"
-            android:paddingStart="24dp">
+            android:id="@+id/menuDesktop"
+            style="@style/MenuRow"
+            android:paddingEnd="12dp">
 
-            <ImageView
-                android:id="@+id/menuBookmarkAddIcon"
-                style="@style/MenuRowIcon"
-                android:src="@drawable/ic_star_border" />
+            <ImageView style="@style/MenuRowIcon" android:src="@drawable/ic_desktop" />
 
             <TextView
                 style="@style/ListTitle"
-                android:text="@string/menu_bookmark_add" />
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:text="@string/opt_desktop" />
+
+            <com.google.android.material.checkbox.MaterialCheckBox
+                android:id="@+id/menuDesktopCheck"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:clickable="false"
+                android:focusable="false" />
         </LinearLayout>
 
         <LinearLayout
-            android:id="@+id/menuHistory"
-            style="@style/ListRow.Compact"
-            android:paddingStart="24dp">
+            android:id="@+id/menuSettings"
+            style="@style/MenuRow">
 
-            <ImageView
-                style="@style/MenuRowIcon"
-                android:src="@drawable/ic_history" />
+            <ImageView style="@style/MenuRowIcon" android:src="@drawable/ic_settings" />
 
-            <TextView
-                style="@style/ListTitle"
-                android:text="@string/menu_history" />
-        </LinearLayout>
-
-        <LinearLayout
-            android:id="@+id/menuOptions"
-            style="@style/ListRow.Compact"
-            android:paddingStart="24dp">
-
-            <ImageView
-                style="@style/MenuRowIcon"
-                android:src="@drawable/ic_settings" />
-
-            <TextView
-                style="@style/ListTitle"
-                android:text="@string/menu_options" />
+            <TextView style="@style/ListTitle" android:text="@string/settings" />
         </LinearLayout>
     </LinearLayout>
 </androidx.core.widget.NestedScrollView>
