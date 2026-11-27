@@ -40,9 +40,7 @@ import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContracts
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import androidx.appcompat.app.AppCompatActivity
-import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.ContextCompat
-import androidx.core.os.LocaleListCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.bottomsheet.BottomSheetDialog
@@ -210,78 +208,8 @@ class MainActivity : AppCompatActivity() {
             if (result !is Updater.CheckResult.Failed) {
                 prefs().edit().putLong("last_update_check", now).apply()
             }
-            if (result is Updater.CheckResult.Available && !isFinishing) showUpdateDialog(result.update)
-        }
-    }
-
-    private fun showUpdateDialog(update: Updater.Update) {
-        val message = buildString {
-            if (update.size > 0) append(getString(R.string.update_size, formatBytes(update.size)))
-            if (update.notes.isNotBlank()) {
-                if (isNotEmpty()) append("\n\n")
-                append(update.notes)
-            }
-        }
-        MaterialAlertDialogBuilder(this)
-            .setTitle(getString(R.string.update_available, update.versionName))
-            .setMessage(message.ifBlank { null })
-            .setPositiveButton(R.string.update_now) { _, _ -> downloadUpdate(update) }
-            .setNegativeButton(R.string.later, null)
-            .show()
-    }
-
-    private fun downloadUpdate(update: Updater.Update) {
-        val bar = com.google.android.material.progressindicator.LinearProgressIndicator(this).apply {
-            isIndeterminate = true
-            max = 100
-        }
-        val box = FrameLayout(this).apply {
-            setPadding(dp(24), dp(16), dp(24), dp(8))
-            addView(bar)
-        }
-        var cancelled = false
-        val dialog = MaterialAlertDialogBuilder(this)
-            .setTitle(R.string.update_downloading)
-            .setView(box)
-            .setCancelable(false)
-            .setNegativeButton(R.string.cancel) { _, _ -> cancelled = true }
-            .show()
-
-        Updater.download(
-            this, update,
-            isCancelled = { cancelled },
-            onProgress = { pct ->
-                // Determinate mode can only be switched on, never back off, while visible.
-                if (pct >= 0) {
-                    if (bar.isIndeterminate) bar.isIndeterminate = false
-                    bar.setProgressCompat(pct, true)
-                }
-            },
-            onDone = { file ->
-                if (dialog.isShowing) dialog.dismiss()
-                when {
-                    file != null -> Updater.install(this, file)
-                    !cancelled -> snack(null, getString(R.string.update_failed))
-                }
-            }
-        )
-    }
-
-    /** Manual check from Options; [status] shows progress and the current version. */
-    private fun checkForUpdatesNow(host: View, status: TextView) {
-        status.text = getString(R.string.checking)
-        Updater.check { result ->
-            status.text = getString(R.string.version_label, BuildConfig.VERSION_NAME)
-            when (result) {
-                is Updater.CheckResult.Available -> {
-                    prefs().edit().putLong("last_update_check", System.currentTimeMillis()).apply()
-                    showUpdateDialog(result.update)
-                }
-                Updater.CheckResult.UpToDate -> {
-                    prefs().edit().putLong("last_update_check", System.currentTimeMillis()).apply()
-                    snack(host, getString(R.string.up_to_date))
-                }
-                Updater.CheckResult.Failed -> snack(host, getString(R.string.update_check_failed))
+            if (result is Updater.CheckResult.Available && !isFinishing) {
+                UpdatePrompt.show(this, result.update, binding.root)
             }
         }
     }
@@ -1356,7 +1284,7 @@ class MainActivity : AppCompatActivity() {
             prefs().edit().putBoolean("desktop", desktopMode).apply()
             applyDesktopMode()
         }
-        action(R.id.menuSettings) { showOptions() }
+        action(R.id.menuSettings) { startActivity(Intent(this, SettingsActivity::class.java)) }
         sheet.show()
     }
 
@@ -1429,40 +1357,6 @@ class MainActivity : AppCompatActivity() {
             .hideSoftInputFromWindow(binding.findInput.windowToken, 0)
     }
 
-    private fun showTextSizeDialog(onChanged: () -> Unit) {
-        val preview = TextView(this).apply {
-            text = getString(R.string.text_size_preview)
-            setTextAppearance(com.google.android.material.R.style.TextAppearance_Material3_BodyLarge)
-            textSize = 16f * textZoom / 100f
-            setPadding(0, 0, 0, dp(12))
-        }
-        val slider = com.google.android.material.slider.Slider(this).apply {
-            valueFrom = 50f
-            valueTo = 200f
-            stepSize = 10f
-            value = textZoom.coerceIn(50, 200).let { (it / 10) * 10 }.toFloat()
-            setLabelFormatter { "${it.toInt()}%" }
-            addOnChangeListener { _, v, _ -> preview.textSize = 16f * v / 100f }
-        }
-        val box = android.widget.LinearLayout(this).apply {
-            orientation = android.widget.LinearLayout.VERTICAL
-            setPadding(dp(24), dp(16), dp(24), 0)
-            addView(preview)
-            addView(slider)
-        }
-        MaterialAlertDialogBuilder(this)
-            .setTitle(R.string.text_size)
-            .setView(box)
-            .setPositiveButton(android.R.string.ok) { _, _ ->
-                textZoom = slider.value.toInt()
-                prefs().edit().putInt("text_zoom", textZoom).apply()
-                tabs.forEach { it.webView.settings.textZoom = textZoom }
-                onChanged()
-            }
-            .setNegativeButton(R.string.cancel, null)
-            .show()
-    }
-
     private fun toggleBookmark() {
         val url = currentTab.url
         if (url.isBlank()) return
@@ -1484,156 +1378,22 @@ class MainActivity : AppCompatActivity() {
     private fun prefs() = getSharedPreferences("settings", MODE_PRIVATE)
 
     @SuppressLint("UseSwitchCompatOrMaterialCode")
-    private fun showOptions() {
-        val sheet = BottomSheetDialog(this)
-        val content = layoutInflater.inflate(R.layout.sheet_options, null)
-        sheet.setContentView(content)
-
-        val langValue = content.findViewById<TextView>(R.id.optLanguageValue)
-        val sizeValue = content.findViewById<TextView>(R.id.optMinSizeValue)
-        val searchValue = content.findViewById<TextView>(R.id.optSearchValue)
-        val adblockSwitch =
-            content.findViewById<com.google.android.material.materialswitch.MaterialSwitch>(R.id.optAdblockSwitch)
-        val desktopSwitch =
-            content.findViewById<com.google.android.material.materialswitch.MaterialSwitch>(R.id.optDesktopSwitch)
-
-        fun sizeLabel() =
-            if (minSizeBytes <= 0) getString(R.string.size_off) else formatBytes(minSizeBytes)
-
-        langValue.text = currentLanguageLabel()
-        sizeValue.text = sizeLabel()
-        searchValue.text = searchEngineLabel()
-        adblockSwitch.isChecked = adBlockEnabled
-        desktopSwitch.isChecked = desktopMode
-
-        content.findViewById<View>(R.id.optLanguage).setOnClickListener {
-            sheet.dismiss(); showLanguageDialog()
+    /** Re-read the settings (they may have changed on the Settings page) and apply them. */
+    private fun applySettings() {
+        val p = prefs()
+        adBlockEnabled = p.getBoolean("adblock", true)
+        minSizeBytes = p.getLong("min_size", 0L)
+        searchEngine = p.getString("search_engine", "google") ?: "google"
+        val zoom = p.getInt("text_zoom", 100)
+        if (zoom != textZoom) {
+            textZoom = zoom
+            tabs.forEach { it.webView.settings.textZoom = zoom }
         }
-        content.findViewById<View>(R.id.optMinSize).setOnClickListener {
-            showMinSizeDialog { sizeValue.text = sizeLabel() }
+        val desktop = p.getBoolean("desktop", false)
+        if (desktop != desktopMode) {
+            desktopMode = desktop
+            if (tabs.isNotEmpty()) applyDesktopMode()
         }
-        content.findViewById<View>(R.id.optSearch).setOnClickListener {
-            showSearchEngineDialog { searchValue.text = searchEngineLabel() }
-        }
-        content.findViewById<View>(R.id.optAdblock).setOnClickListener {
-            adBlockEnabled = !adBlockEnabled
-            adblockSwitch.isChecked = adBlockEnabled
-            prefs().edit().putBoolean("adblock", adBlockEnabled).apply()
-        }
-        content.findViewById<View>(R.id.optDesktop).setOnClickListener {
-            desktopMode = !desktopMode
-            desktopSwitch.isChecked = desktopMode
-            prefs().edit().putBoolean("desktop", desktopMode).apply()
-            applyDesktopMode()
-        }
-        val floatingSwitch =
-            content.findViewById<com.google.android.material.materialswitch.MaterialSwitch>(R.id.optFloatingSwitch)
-        fun floatingOn() =
-            prefs().getBoolean(FloatingButtonService.PREF_ENABLED, false) && FloatingButtonService.isEnabled(this)
-        floatingSwitch.isChecked = floatingOn()
-        content.findViewById<View>(R.id.optFloating).setOnClickListener {
-            if (floatingOn()) {
-                prefs().edit().putBoolean(FloatingButtonService.PREF_ENABLED, false).apply()
-                floatingSwitch.isChecked = false
-            } else {
-                prefs().edit().putBoolean(FloatingButtonService.PREF_ENABLED, true).apply()
-                if (FloatingButtonService.isEnabled(this)) {
-                    floatingSwitch.isChecked = true
-                } else {
-                    sheet.dismiss()
-                    showFloatingButtonSetup()
-                }
-            }
-        }
-        val restoreSwitch =
-            content.findViewById<com.google.android.material.materialswitch.MaterialSwitch>(R.id.optRestoreSwitch)
-        restoreSwitch.isChecked = prefs().getBoolean("restore_tabs", true)
-        content.findViewById<View>(R.id.optRestore).setOnClickListener {
-            restoreSwitch.isChecked = !restoreSwitch.isChecked
-            prefs().edit().putBoolean("restore_tabs", restoreSwitch.isChecked).apply()
-        }
-        val textSizeValue = content.findViewById<TextView>(R.id.optTextSizeValue)
-        textSizeValue.text = "$textZoom%"
-        content.findViewById<View>(R.id.optTextSize).setOnClickListener {
-            showTextSizeDialog { textSizeValue.text = "$textZoom%" }
-        }
-        content.findViewById<View>(R.id.optClearData).setOnClickListener {
-            clearBrowsingData()
-            snack(content, getString(R.string.data_cleared))
-        }
-        val updatesValue = content.findViewById<TextView>(R.id.optUpdatesValue)
-        updatesValue.text = getString(R.string.version_label, BuildConfig.VERSION_NAME)
-        content.findViewById<View>(R.id.optUpdates).setOnClickListener {
-            checkForUpdatesNow(content, updatesValue)
-        }
-        sheet.show()
-    }
-
-    /** Explain the Accessibility permission, then send the user to turn it on. */
-    private fun showFloatingButtonSetup() {
-        MaterialAlertDialogBuilder(this)
-            .setTitle(R.string.floating_button_title)
-            .setMessage(R.string.floating_button_explain)
-            .setPositiveButton(R.string.open_settings) { _, _ ->
-                runCatching {
-                    startActivity(Intent(android.provider.Settings.ACTION_ACCESSIBILITY_SETTINGS))
-                }
-            }
-            .setNegativeButton(R.string.cancel, null)
-            .show()
-    }
-
-    private fun currentLanguageLabel(): String {
-        val cur = AppCompatDelegate.getApplicationLocales()
-        val loc = if (cur.isEmpty) null else cur[0]
-        return when {
-            loc == null -> getString(R.string.lang_system)
-            loc.language != "zh" -> getString(R.string.lang_english)
-            loc.script == "Hant" -> getString(R.string.lang_chinese_traditional)
-            else -> getString(R.string.lang_chinese_simplified)
-        }
-    }
-
-    private fun searchEngineLabel(): String = when (searchEngine) {
-        "bing" -> "Bing"
-        "ddg" -> "DuckDuckGo"
-        else -> "Google"
-    }
-
-    private fun showMinSizeDialog(onChanged: () -> Unit) {
-        val values = longArrayOf(
-            0L, 100L * 1024, 500L * 1024, 1L * 1024 * 1024, 5L * 1024 * 1024, 10L * 1024 * 1024
-        )
-        val labels = values
-            .map { if (it <= 0) getString(R.string.size_off) else formatBytes(it) }
-            .toTypedArray()
-        val checked = values.indexOfFirst { it == minSizeBytes }.coerceAtLeast(0)
-        MaterialAlertDialogBuilder(this)
-            .setTitle(R.string.opt_min_size)
-            .setSingleChoiceItems(labels, checked) { d, which ->
-                minSizeBytes = values[which]
-                prefs().edit().putLong("min_size", minSizeBytes).apply()
-                onChanged()
-                d.dismiss()
-            }
-            .setNegativeButton(R.string.cancel, null)
-            .show()
-    }
-
-    private fun showSearchEngineDialog(onChanged: () -> Unit) {
-        val keys = arrayOf("google", "bing", "ddg")
-        val labels = arrayOf("Google", "Bing", "DuckDuckGo")
-        val checked = keys.indexOf(searchEngine).coerceAtLeast(0)
-        MaterialAlertDialogBuilder(this)
-            .setTitle(R.string.opt_search_engine)
-            .setSingleChoiceItems(labels, checked) { d, which ->
-                searchEngine = keys[which]
-                prefs().edit().putString("search_engine", searchEngine).apply()
-                onChanged()
-                d.dismiss()
-            }
-            .setNegativeButton(R.string.cancel, null)
-            .show()
     }
 
     private fun applyDesktopMode() {
@@ -1641,46 +1401,6 @@ class MainActivity : AppCompatActivity() {
         tabs.forEach { it.webView.settings.userAgentString = currentUa }
         currentTab.webView.reload()
     }
-
-    private fun clearBrowsingData() {
-        CookieManager.getInstance().removeAllCookies(null)
-        CookieManager.getInstance().flush()
-        android.webkit.WebStorage.getInstance().deleteAllData()
-        tabs.forEach { it.webView.clearCache(true); it.webView.clearHistory() }
-    }
-
-    private fun showLanguageDialog() {
-        val tags = arrayOf("", "en", "zh-Hans", "zh-Hant")
-        val labels = arrayOf(
-            getString(R.string.lang_system),
-            getString(R.string.lang_english),
-            getString(R.string.lang_chinese_simplified),
-            getString(R.string.lang_chinese_traditional)
-        )
-        val current = AppCompatDelegate.getApplicationLocales()
-        val loc = if (current.isEmpty) null else current[0]
-        val currentTag = when {
-            loc == null -> ""
-            loc.language != "zh" -> loc.language
-            loc.script == "Hant" -> "zh-Hant"
-            else -> "zh-Hans"
-        }
-        val checked = tags.indexOf(currentTag).coerceAtLeast(0)
-
-        MaterialAlertDialogBuilder(this)
-            .setTitle(R.string.language_title)
-            .setSingleChoiceItems(labels, checked) { dialog, which ->
-                val tag = tags[which]
-                AppCompatDelegate.setApplicationLocales(
-                    if (tag.isEmpty()) LocaleListCompat.getEmptyLocaleList()
-                    else LocaleListCompat.forLanguageTags(tag)
-                )
-                dialog.dismiss()
-            }
-            .setNegativeButton(R.string.cancel, null)
-            .show()
-    }
-
 
     private fun updateBadge() {
         val count = currentTab.sniffer.countPassing(minSizeBytes)
@@ -1759,9 +1479,11 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        applySettings()
         if (tabs.isNotEmpty()) {
             updateStartPage()
             updateUrlBarIcon()
+            updateBadge()
         }
         statusHandler.post(statusUpdater)
         // Back from the "install unknown apps" setting: continue the update.

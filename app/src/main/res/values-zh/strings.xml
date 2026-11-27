@@ -159,4 +159,11 @@
     <string name="clear_history_confirm">将从历史记录中移除所有访问过的网页。</string>
     <string name="search_hint">搜索</string>
     <string name="no_results">没有匹配结果</string>
+    <string name="opt_desktop_default">默认使用桌面版网站</string>
+    <string name="section_general">通用</string>
+    <string name="section_privacy">隐私</string>
+    <string name="section_about">关于</string>
+    <string name="clear_history_option">浏览历史记录</string>
+    <string name="clear_cookies_option">Cookie 和网站数据</string>
+    <string name="clear_cache_option">缓存的图片和文件</string>
 </resources>

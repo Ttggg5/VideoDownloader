@@ -159,4 +159,11 @@
     <string name="clear_history_confirm">將從歷史記錄中移除所有造訪過的網頁。</string>
     <string name="search_hint">搜尋</string>
     <string name="no_results">沒有相符結果</string>
+    <string name="opt_desktop_default">預設使用電腦版網站</string>
+    <string name="section_general">一般</string>
+    <string name="section_privacy">隱私權</string>
+    <string name="section_about">關於</string>
+    <string name="clear_history_option">瀏覽歷史記錄</string>
+    <string name="clear_cookies_option">Cookie 和網站資料</string>
+    <string name="clear_cache_option">快取圖片和檔案</string>
 </resources>
