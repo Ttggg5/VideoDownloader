@@ -91,6 +91,15 @@
         </LinearLayout>
 
         <LinearLayout
+            android:id="@+id/menuAddToDial"
+            style="@style/MenuRow">
+
+            <ImageView style="@style/MenuRowIcon" android:src="@drawable/ic_add" />
+
+            <TextView style="@style/ListTitle" android:text="@string/add_to_speed_dial" />
+        </LinearLayout>
+
+        <LinearLayout
             android:id="@+id/menuFind"
             style="@style/MenuRow">
 

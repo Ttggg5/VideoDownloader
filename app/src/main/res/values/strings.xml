@@ -181,4 +181,7 @@
     <string name="text_copied">Text copied</string>
     <string name="image_share_failed">Couldn\'t load the image</string>
     <string name="open_as_tab">Open as tab</string>
+    <string name="home">Home</string>
+    <string name="add_to_speed_dial">Add to speed dial</string>
+    <string name="added_to_speed_dial">Added to speed dial</string>
 </resources>

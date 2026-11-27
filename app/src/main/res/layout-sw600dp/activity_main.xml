@@ -67,6 +67,15 @@
                 android:src="@drawable/ic_forward"
                 app:tint="?attr/colorOnSurfaceVariant" />
 
+            <ImageButton
+                android:id="@+id/btnHome"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/home"
+                android:src="@drawable/ic_home"
+                app:tint="?attr/colorOnSurfaceVariant" />
+
             <LinearLayout
                 android:id="@+id/urlPill"
                 android:layout_width="0dp"

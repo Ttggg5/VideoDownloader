@@ -142,8 +142,6 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private val homeUrl = "https://www.google.com"
-
     private val notificationPermission =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { /* ignored */ }
 
@@ -171,7 +169,7 @@ class MainActivity : AppCompatActivity() {
         val restored = prefs.getBoolean("restore_tabs", true) && restoreSession()
         when {
             shared != null -> addTabAndSelect(createTab(shared))
-            !restored -> addTabAndSelect(createTab(homeUrl))
+            !restored -> openNewTab()
         }
 
         if (savedInstanceState == null) checkForUpdatesQuietly()
@@ -181,7 +179,7 @@ class MainActivity : AppCompatActivity() {
 
     /** Tabs worth reopening next time: real pages only (no blank start pages). */
     private fun sessionTabs(): List<Tab> =
-        tabs.filter { !it.incognito && !it.showingStart && (it.pendingUrl ?: it.url).isNotBlank() }
+        tabs.filter { !it.incognito && (it.pendingUrl ?: it.url).isNotBlank() }
 
     private fun saveSession() {
         if (tabs.isEmpty()) return
@@ -293,6 +291,30 @@ class MainActivity : AppCompatActivity() {
     }
 
     /** A blank tab that shows the start page until it navigates somewhere. */
+    /** Show the start page in the current tab; the page stays underneath for Back. */
+    private fun goHome() {
+        if (currentTab.showingStart) return
+        capturePreview(currentTab)
+        currentTab.showingStart = true
+        closeFindBar()
+        hideSuggestions()
+        binding.urlBar.setText("")
+        updateStartPage()
+        updateNavButtons()
+        showBar()
+    }
+
+    /** If the start page covers a loaded page, go back to that page. */
+    private fun leaveStartPage(): Boolean {
+        val tab = currentTab
+        if (!tab.showingStart || tab.url.isBlank()) return false
+        tab.showingStart = false
+        if (!binding.urlBar.hasFocus()) binding.urlBar.setText(tab.url)
+        updateStartPage()
+        updateNavButtons()
+        return true
+    }
+
     private fun openNewTab(incognito: Boolean = false) {
         addTabAndSelect(createTab(null, incognito).also { it.showingStart = true })
         if (incognito && !incognitoProfileSupported && !sharedCookieWarned) {
@@ -331,7 +353,7 @@ class MainActivity : AppCompatActivity() {
         // On phones the nav buttons sit on the bar itself, so they follow it too.
         binding.bottomBar?.let { bar ->
             bar.setBackgroundResource(if (inc) R.drawable.bg_bottom_toolbar_incognito else R.drawable.bg_bottom_toolbar)
-            listOf(binding.btnBack, binding.btnForward, binding.btnMenu, binding.btnDownloads.dlIcon)
+            listOf(binding.btnBack, binding.btnForward, binding.btnHome, binding.btnMenu, binding.btnDownloads.dlIcon)
                 .forEach { androidx.core.widget.ImageViewCompat.setImageTintList(it, onVarList) }
             binding.tabCount.setTextColor(onVar)
             // Recolor only the outline: tinting a stroke-only shape also fills it,
@@ -351,7 +373,7 @@ class MainActivity : AppCompatActivity() {
         page.startHeroIcon.setImageResource(if (inc) R.drawable.ic_incognito else R.drawable.ic_download)
         page.startHeroTitle.setText(if (inc) R.string.incognito else R.string.app_name)
         page.startHeroSubtitle.visibility = if (inc) View.VISIBLE else View.GONE
-        val items = SpeedDial.tiles(this, if (isWide) 12 else 8)
+        val items = SpeedDial.tiles(this, if (isWide) 36 else 24)
         page.startEmpty.visibility = View.GONE
         page.startTiles.layoutManager =
             androidx.recyclerview.widget.GridLayoutManager(this, if (isWide) 6 else 4)
@@ -367,23 +389,15 @@ class MainActivity : AppCompatActivity() {
     private fun showTileMenu(tile: SpeedDial.Tile, anchor: View) {
         val menu = androidx.appcompat.widget.PopupMenu(this, anchor)
         menu.menu.add(0, 1, 0, R.string.edit)
-        menu.menu.add(0, 2, 1, if (tile.pinned) R.string.unpin else R.string.pin)
-        menu.menu.add(0, 3, 2, R.string.remove)
+        menu.menu.add(0, 2, 1, R.string.remove)
         menu.setOnMenuItemClickListener { item ->
             when (item.itemId) {
                 1 -> showSiteDialog(tile)
                 2 -> {
-                    if (tile.pinned) SpeedDial.unpin(this, tile.url) else SpeedDial.pin(this, tile.title, tile.url)
-                    updateStartPage()
-                }
-                3 -> {
-                    // Remove = gone from the dial: unpin it and stop suggesting the site.
-                    val index = if (tile.pinned) SpeedDial.unpin(this, tile.url) else -1
-                    SpeedDial.hide(this, tile.url)
+                    val index = SpeedDial.unpin(this, tile.url)
                     updateStartPage()
                     snack(null, getString(R.string.site_removed), R.string.undo) {
-                        if (tile.pinned) SpeedDial.pin(this, tile.title, tile.url, index)
-                        else SpeedDial.unhide(this, SpeedDial.host(tile.url))
+                        SpeedDial.pin(this, tile.title, tile.url, index)
                         updateStartPage()
                     }
                 }
@@ -816,16 +830,20 @@ class MainActivity : AppCompatActivity() {
             override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
                 super.onPageStarted(view, url, favicon)
                 if (tab === currentTab) closeFindBar()
+                val hadPage = tab.url.isNotBlank()
                 tab.sniffer.clear()
                 tab.url = url ?: ""
                 tab.favicon = null
-                if (tab.showingStart) {
+                // A blank new tab's first page replaces the start page. After Home, the
+                // page underneath may still navigate on its own; that must not close it
+                // (user navigation goes through navigate(), which clears the flag itself).
+                if (tab.showingStart && !hadPage) {
                     tab.showingStart = false
                     if (tab === currentTab) updateStartPage()
                 }
                 if (tab === currentTab) {
                     showBar()
-                    if (!binding.urlBar.hasFocus()) binding.urlBar.setText(url)
+                    if (!binding.urlBar.hasFocus() && !tab.showingStart) binding.urlBar.setText(url)
                     updateBadge()
                     updateUrlBarIcon()
                 }
@@ -969,8 +987,12 @@ class MainActivity : AppCompatActivity() {
         }
         setupSuggestions()
         binding.btnBack.setOnClickListener {
-            if (currentTab.webView.canGoBack()) currentTab.webView.goBack()
+            when {
+                leaveStartPage() -> Unit
+                currentTab.webView.canGoBack() -> currentTab.webView.goBack()
+            }
         }
+        binding.btnHome.setOnClickListener { goHome() }
         binding.btnForward.setOnClickListener {
             if (currentTab.webView.canGoForward()) currentTab.webView.goForward()
         }
@@ -1016,6 +1038,7 @@ class MainActivity : AppCompatActivity() {
             override fun handleOnBackPressed() {
                 when {
                     binding.findBar.visibility == View.VISIBLE -> closeFindBar()
+                    leaveStartPage() -> Unit
                     currentTab.webView.canGoBack() -> currentTab.webView.goBack()
                     tabs.size > 1 -> closeTab(currentIndex)
                     else -> finish()
@@ -1509,6 +1532,9 @@ class MainActivity : AppCompatActivity() {
             content.findViewById<View>(id).apply { isEnabled = hasPage; alpha = if (hasPage) 1f else 0.38f }
         }
         content.findViewById<View>(R.id.menuFind).visibility = if (hasPage) View.VISIBLE else View.GONE
+        val inDial = SpeedDial.pinned(this).any { it.url == currentTab.url }
+        content.findViewById<View>(R.id.menuAddToDial).visibility =
+            if (hasPage && !inDial) View.VISIBLE else View.GONE
         content.findViewById<android.widget.CheckBox>(R.id.menuDesktopCheck).isChecked = desktopMode
 
         fun action(id: Int, block: () -> Unit) {
@@ -1522,6 +1548,10 @@ class MainActivity : AppCompatActivity() {
         action(R.id.menuNewIncognito) { openNewTab(incognito = true) }
         action(R.id.menuLibrary) { openLibrary() }
         action(R.id.menuFind) { openFindBar() }
+        action(R.id.menuAddToDial) {
+            SpeedDial.pin(this, currentTab.title, currentTab.url)
+            snack(null, getString(R.string.added_to_speed_dial))
+        }
         action(R.id.menuDesktop) {
             desktopMode = !desktopMode
             prefs().edit().putBoolean("desktop", desktopMode).apply()
@@ -1697,7 +1727,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun updateNavButtons() {
-        binding.btnBack.alpha = if (currentTab.webView.canGoBack()) 1f else 0.38f
+        val canBack = currentTab.webView.canGoBack() || (currentTab.showingStart && currentTab.url.isNotBlank())
+        binding.btnBack.alpha = if (canBack) 1f else 0.38f
         binding.btnForward.alpha = if (currentTab.webView.canGoForward()) 1f else 0.38f
     }
 

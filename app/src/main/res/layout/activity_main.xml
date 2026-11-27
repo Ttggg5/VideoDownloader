@@ -186,6 +186,12 @@
                         android:contentDescription="@string/forward"
                         android:src="@drawable/ic_forward" />
 
+                    <ImageButton
+                        android:id="@+id/btnHome"
+                        style="@style/NavButton"
+                        android:contentDescription="@string/home"
+                        android:src="@drawable/ic_home" />
+
                     <include
                         android:id="@+id/btnDownloads"
                         layout="@layout/view_download_button"

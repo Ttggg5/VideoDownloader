@@ -5,29 +5,15 @@ import android.net.Uri
 import org.json.JSONArray
 import org.json.JSONObject
 
-/** Opera-style start page tiles: sites you pinned, then your most visited sites. */
+/** Opera-style start page tiles: the sites the user added. */
 object SpeedDial {
 
     data class Tile(val title: String, val url: String, val pinned: Boolean)
 
     private const val PREF = "speed_dial"
 
-    fun tiles(context: Context, max: Int): List<Tile> {
-        val pinned = pinned(context)
-        val hidden = hidden(context)
-        val taken = pinned.mapTo(HashSet()) { host(it.url) }
-        // Most visited, one tile per site, using that site's most visited page.
-        val frequent = BrowsingHistory.all(context)
-            .groupBy { host(it.url) }
-            .filterKeys { it.isNotBlank() && it !in hidden && it !in taken }
-            .map { (_, entries) ->
-                val best = entries.maxByOrNull { it.visits }!!
-                Triple(entries.sumOf { it.visits }, best, entries.maxOf { it.time })
-            }
-            .sortedWith(compareByDescending<Triple<Int, BrowsingHistory.Entry, Long>> { it.first }.thenByDescending { it.third })
-            .map { Tile(it.second.title, it.second.url, false) }
-        return (pinned + frequent).take(max)
-    }
+    /** Only sites the user added; visited sites are never added automatically. */
+    fun tiles(context: Context, max: Int): List<Tile> = pinned(context).take(max)
 
     fun pinned(context: Context): List<Tile> {
         val arr = runCatching { JSONArray(prefs(context).getString("pinned", "[]")) }.getOrDefault(JSONArray())
