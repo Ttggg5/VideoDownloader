@@ -338,14 +338,4 @@
         <item name="android:background">?attr/selectableItemBackgroundBorderless</item>
         <item name="tint">?attr/colorOnSurfaceVariant</item>
     </style>
-
-    <style name="Animation.VD.PopupUp" parent="">
-        <item name="android:windowEnterAnimation">@anim/popup_enter_up</item>
-        <item name="android:windowExitAnimation">@anim/popup_exit</item>
-    </style>
-
-    <style name="Animation.VD.PopupDown" parent="">
-        <item name="android:windowEnterAnimation">@anim/popup_enter_down</item>
-        <item name="android:windowExitAnimation">@anim/popup_exit</item>
-    </style>
 </resources>

@@ -147,4 +147,5 @@
     <string name="floating_button_removed">已隐藏悬浮按钮，可在“选项”中重新开启。</string>
     <string name="drop_to_hide">拖到此处隐藏</string>
     <string name="floating_button_on">悬浮按钮已开启 — 拖到 ✕ 上即可隐藏</string>
+    <string name="all_downloads">所有下载</string>
 </resources>

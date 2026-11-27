@@ -1,6 +1,5 @@
 package com.vdbrowser.app
 
-import android.graphics.Color
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -89,9 +88,15 @@ class TabAdapter(
         // The current tab gets a gradient title strip with white text.
         when {
             index == currentIndex() -> {
-                holder.header.setBackgroundResource(R.drawable.bg_brand_gradient)
-                holder.title.setTextColor(Color.WHITE)
-                holder.close.setColorFilter(Color.WHITE)
+                holder.header.setBackgroundColor(
+                    MaterialColors.getColor(holder.header, com.google.android.material.R.attr.colorSecondaryContainer)
+                )
+                holder.title.setTextColor(
+                    MaterialColors.getColor(holder.title, com.google.android.material.R.attr.colorOnSecondaryContainer)
+                )
+                holder.close.setColorFilter(
+                    MaterialColors.getColor(holder.close, com.google.android.material.R.attr.colorOnSecondaryContainer)
+                )
             }
             tab.incognito -> {
                 holder.header.setBackgroundColor(ContextCompat.getColor(ctx, R.color.incognito_header))
@@ -104,6 +109,9 @@ class TabAdapter(
                 holder.close.setColorFilter(MaterialColors.getColor(holder.close, com.google.android.material.R.attr.colorOnSurfaceVariant))
             }
         }
+
+        (holder.itemView as? MaterialCardView)?.strokeWidth =
+            if (index == currentIndex()) (2 * ctx.resources.displayMetrics.density).toInt() else 0
 
         holder.itemView.setOnClickListener { onSelect(index) }
         holder.itemView.setOnLongClickListener { onLongPress(index, it); true }

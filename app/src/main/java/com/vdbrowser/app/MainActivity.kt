@@ -20,7 +20,6 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
-import android.widget.PopupWindow
 import android.webkit.CookieManager
 import android.webkit.JavascriptInterface
 import android.webkit.URLUtil
@@ -383,14 +382,14 @@ class MainActivity : AppCompatActivity() {
         binding.findInput.setTextColor(on)
         binding.findInput.setHintTextColor(onVar)
         binding.findCount.setTextColor(onVar)
-        binding.urlLeadingIcon.setImageResource(if (inc) R.drawable.ic_incognito else R.drawable.ic_search)
-        listOf(binding.urlLeadingIcon, binding.btnBookmark, binding.findPrev, binding.findNext, binding.findClose)
+        updateUrlBarIcon()
+        listOf(binding.urlLeadingIcon, binding.findPrev, binding.findNext, binding.findClose)
             .forEach { androidx.core.widget.ImageViewCompat.setImageTintList(it, onVarList) }
 
         // On phones the nav buttons sit on the bar itself, so they follow it too.
         binding.bottomBar?.let { bar ->
-            bar.setBackgroundResource(if (inc) R.drawable.bg_floating_bar_incognito else R.drawable.bg_floating_bar)
-            listOf(binding.btnBack, binding.btnForward, binding.btnMenu)
+            bar.setBackgroundResource(if (inc) R.drawable.bg_bottom_toolbar_incognito else R.drawable.bg_bottom_toolbar)
+            listOf(binding.btnBack, binding.btnForward, binding.btnMenu, binding.btnDownloads.dlIcon)
                 .forEach { androidx.core.widget.ImageViewCompat.setImageTintList(it, onVarList) }
             binding.tabCount.setTextColor(onVar)
             binding.tabCount.background?.mutate()?.setTint(onVar)
@@ -488,7 +487,7 @@ class MainActivity : AppCompatActivity() {
         updateBadge()
         updateNavButtons()
         updateTabCount()
-        updateBookmarkIcon()
+        updateUrlBarIcon()
         updateStartPage()
         applyChromeLook()
         closeFindBar()
@@ -661,7 +660,7 @@ class MainActivity : AppCompatActivity() {
                     showBar()
                     if (!binding.urlBar.hasFocus()) binding.urlBar.setText(url)
                     updateBadge()
-                    updateBookmarkIcon()
+                    updateUrlBarIcon()
                 }
                 refreshTabStrip()
             }
@@ -672,7 +671,7 @@ class MainActivity : AppCompatActivity() {
                 injectScanner(view)
                 if (tab === currentTab) {
                     updateNavButtons()
-                    updateBookmarkIcon()
+                    updateUrlBarIcon()
                 }
                 refreshTabStrip()
                 if (!tab.incognito) {
@@ -803,20 +802,16 @@ class MainActivity : AppCompatActivity() {
         binding.btnForward.setOnClickListener {
             if (currentTab.webView.canGoForward()) currentTab.webView.goForward()
         }
-        binding.btnBookmark.setOnClickListener {
-            toggleBookmark()
-            updateBookmarkIcon()
-        }
         binding.btnTabs.setOnClickListener { showTabSwitcher() }
         binding.btnMenu.setOnClickListener { showOverflowMenu() }
-        binding.dlStatus.setOnClickListener { openDownloadsPage() }
+        binding.btnDownloads.root.setOnClickListener { showMediaSheet() }
+        binding.btnDownloads.root.setOnLongClickListener { openDownloadsPage(); true }
         setupFindBar()
         binding.startPage.startSearch.setOnClickListener {
             binding.urlBar.requestFocus()
             (getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager)
                 .showSoftInput(binding.urlBar, InputMethodManager.SHOW_IMPLICIT)
         }
-        setupFloatingDownloadButton()
 
         // Large screens (sw600dp) show a desktop-style tab strip on top.
         binding.tabStrip?.let { strip ->
@@ -857,61 +852,14 @@ class MainActivity : AppCompatActivity() {
         })
     }
 
-    /** The download FAB opens the media sheet on tap and can be dragged anywhere. */
-    @SuppressLint("ClickableViewAccessibility")
-    private fun setupFloatingDownloadButton() {
-        // Listener sits on the FAB (the touchable child) but moves its container.
-        val container = binding.dlFab
-        var downX = 0f
-        var downY = 0f
-        var offsetX = 0f
-        var offsetY = 0f
-        var dragged = false
-        val touchSlop = 12f
-
-        fun pressScale(v: View, s: Float) =
-            v.animate().scaleX(s).scaleY(s).setDuration(110).start()
-
-        binding.btnDownloads.setOnTouchListener { v, event ->
-            val parent = container.parent as View
-            when (event.actionMasked) {
-                MotionEvent.ACTION_DOWN -> {
-                    pressScale(v, 0.9f)
-                    downX = event.rawX
-                    downY = event.rawY
-                    offsetX = container.x - event.rawX
-                    offsetY = container.y - event.rawY
-                    dragged = false
-                    true
-                }
-                MotionEvent.ACTION_MOVE -> {
-                    if (kotlin.math.abs(event.rawX - downX) > touchSlop ||
-                        kotlin.math.abs(event.rawY - downY) > touchSlop
-                    ) dragged = true
-                    container.x = (event.rawX + offsetX)
-                        .coerceIn(0f, (parent.width - container.width).toFloat())
-                    container.y = (event.rawY + offsetY)
-                        .coerceIn(0f, (parent.height - container.height).toFloat())
-                    true
-                }
-                MotionEvent.ACTION_UP -> {
-                    pressScale(v, 1f)
-                    if (!dragged) showMediaSheet()
-                    true
-                }
-                MotionEvent.ACTION_CANCEL -> {
-                    pressScale(v, 1f)
-                    true
-                }
-                else -> false
+    /** Address bar icon: incognito, a lock for secure pages, otherwise search. */
+    private fun updateUrlBarIcon() {
+        binding.urlLeadingIcon.setImageResource(
+            when {
+                currentTab.incognito -> R.drawable.ic_incognito
+                currentTab.url.startsWith("https://") -> R.drawable.ic_lock
+                else -> R.drawable.ic_search
             }
-        }
-    }
-
-    private fun updateBookmarkIcon() {
-        val marked = Bookmarks.isBookmarked(this, currentTab.url)
-        binding.btnBookmark.setImageResource(
-            if (marked) R.drawable.ic_star else R.drawable.ic_star_border
         )
     }
 
@@ -1050,28 +998,26 @@ class MainActivity : AppCompatActivity() {
         view?.evaluateJavascript(MediaScanJs.SCRIPT, null)
     }
 
-    /** Shows detected media as a popup anchored above the floating download button. */
+    /** Videos detected on the current page, as a bottom sheet. */
     private fun showMediaSheet() {
         // Pre-filter by the minimum-size option so items don't pop in/out.
         val items = currentTab.sniffer.snapshotPassing(minSizeBytes).toMutableList()
+        val sheet = BottomSheetDialog(this)
         val content = layoutInflater.inflate(R.layout.sheet_downloads, null)
-        val widthPx = minOf(resources.displayMetrics.widthPixels - dp(24), dp(360))
-
-        val popup = PopupWindow(this).apply {
-            this.width = widthPx
-            isFocusable = true
-            isOutsideTouchable = true
-            elevation = dp(20).toFloat()
-            setBackgroundDrawable(ContextCompat.getDrawable(this@MainActivity, R.drawable.bg_popup))
-            contentView = content
-        }
+        sheet.setContentView(content)
 
         val recycler = content.findViewById<RecyclerView>(R.id.mediaList)
         val empty = content.findViewById<View>(R.id.emptyView)
-        val header = content.findViewById<TextView>(R.id.sheetTitle)
         val loading = content.findViewById<View>(R.id.mediaLoading)
-        header.text = getString(R.string.detected_media_title)
-        content.findViewById<TextView>(R.id.mediaCount).text = items.size.toString()
+        content.findViewById<TextView>(R.id.sheetTitle).text = getString(R.string.detected_media_title)
+        content.findViewById<TextView>(R.id.mediaCount).apply {
+            text = items.size.toString()
+            visibility = if (items.isEmpty()) View.GONE else View.VISIBLE
+        }
+        content.findViewById<View>(R.id.mediaAllDownloads).setOnClickListener {
+            sheet.dismiss()
+            openDownloadsPage()
+        }
 
         if (items.isEmpty()) {
             recycler.visibility = View.GONE
@@ -1086,7 +1032,7 @@ class MainActivity : AppCompatActivity() {
             adapter = MediaAdapter(
                 items,
                 onClick = { item ->
-                    popup.dismiss()
+                    sheet.dismiss()
                     showRenameDialog(item, pageUrl, ua)
                 },
                 onNeedThumb = { item ->
@@ -1114,40 +1060,9 @@ class MainActivity : AppCompatActivity() {
                 }
             }
             handler.post(poll)
-            popup.setOnDismissListener { handler.removeCallbacks(poll) }
+            sheet.setOnDismissListener { handler.removeCallbacks(poll) }
         }
-
-        // Place the popup fully above or below the FAB (whichever has more room),
-        // so it never covers the button. Cap the height so long lists scroll.
-        val margin = dp(8)
-        val fab = binding.dlFab
-        val fabLoc = IntArray(2); fab.getLocationInWindow(fabLoc)
-        val rootLoc = IntArray(2); binding.root.getLocationInWindow(rootLoc)
-        val rootTop = rootLoc[1]
-        val rootBottom = rootLoc[1] + binding.root.height
-        val rootLeft = rootLoc[0]
-        val rootRight = rootLoc[0] + binding.root.width
-
-        val spaceAbove = fabLoc[1] - rootTop - margin
-        val spaceBelow = rootBottom - (fabLoc[1] + fab.height) - margin
-        val showAbove = spaceAbove >= spaceBelow
-        popup.animationStyle = if (showAbove) R.style.Animation_VD_PopupUp else R.style.Animation_VD_PopupDown
-        val avail = (if (showAbove) spaceAbove else spaceBelow)
-            .coerceAtMost((resources.displayMetrics.heightPixels * 0.6f).toInt())
-            .coerceAtLeast(dp(120))
-
-        content.measure(
-            View.MeasureSpec.makeMeasureSpec(widthPx, View.MeasureSpec.EXACTLY),
-            View.MeasureSpec.makeMeasureSpec(avail, View.MeasureSpec.AT_MOST)
-        )
-        popup.height = content.measuredHeight
-
-        val maxX = (rootRight - widthPx - margin).coerceAtLeast(rootLeft + margin)
-        val x = (fabLoc[0] + fab.width - widthPx).coerceIn(rootLeft + margin, maxX)
-        val y = if (showAbove) fabLoc[1] - popup.height - margin
-        else fabLoc[1] + fab.height + margin
-        popup.showAtLocation(binding.root, Gravity.NO_GRAVITY, x, y)
-        dimBehind(popup)
+        sheet.show()
     }
 
     /** Let the user rename the file, then start the download. */
@@ -1167,21 +1082,6 @@ class MainActivity : AppCompatActivity() {
             }
             .setNegativeButton(R.string.cancel, null)
             .show()
-    }
-
-    /** Dims the screen behind a popup window to draw attention to it. */
-    private fun dimBehind(popup: PopupWindow) {
-        try {
-            var root: View = popup.contentView
-            while (root.parent is View) root = root.parent as View
-            val lp = root.layoutParams as? android.view.WindowManager.LayoutParams ?: return
-            lp.flags = lp.flags or android.view.WindowManager.LayoutParams.FLAG_DIM_BEHIND
-            lp.dimAmount = 0.35f
-            (getSystemService(WINDOW_SERVICE) as android.view.WindowManager)
-                .updateViewLayout(root, lp)
-        } catch (e: Exception) {
-            // Best-effort emphasis; ignore if the internal view tree differs.
-        }
     }
 
     private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
@@ -1442,7 +1342,7 @@ class MainActivity : AppCompatActivity() {
         action(R.id.menuShare) { sharePage() }
         action(R.id.menuCopyLink) { copyPageLink() }
         action(R.id.menuFind) { openFindBar() }
-        action(R.id.menuBookmarkAdd) { toggleBookmark(); updateBookmarkIcon() }
+        action(R.id.menuBookmarkAdd) { toggleBookmark(); updateUrlBarIcon() }
         action(R.id.menuHistory) { openDownloadsPage() }
         action(R.id.menuOptions) { showOptions() }
         sheet.show()
@@ -1561,7 +1461,7 @@ class MainActivity : AppCompatActivity() {
             Bookmarks.remove(this, url)
             snack(null, getString(R.string.bookmark_removed), R.string.undo) {
                 Bookmarks.insert(this, pos, item)
-                updateBookmarkIcon()
+                updateUrlBarIcon()
             }
         } else {
             Bookmarks.add(this, currentTab.title, url)
@@ -1596,12 +1496,12 @@ class MainActivity : AppCompatActivity() {
                 onOpen = { item -> currentTab.webView.loadUrl(item.url); sheet.dismiss() },
                 onDelete = { pos, item ->
                     Bookmarks.remove(this, item.url)
-                    updateBookmarkIcon()
+                    updateUrlBarIcon()
                     syncEmpty()
                     snack(content, getString(R.string.bookmark_removed), R.string.undo) {
                         Bookmarks.insert(this, pos, item)
                         adapter.restore(pos, item)
-                        updateBookmarkIcon()
+                        updateUrlBarIcon()
                         syncEmpty()
                     }
                 }
@@ -1851,7 +1751,7 @@ class MainActivity : AppCompatActivity() {
         val grew = badgeTab === currentTab && count > badgeCount
         badgeTab = currentTab
         badgeCount = count
-        binding.downloadBadge.apply {
+        binding.btnDownloads.downloadBadge.apply {
             visibility = if (count > 0) View.VISIBLE else View.GONE
             text = if (count > 99) "99+" else count.toString()
             if (grew) {
@@ -1939,23 +1839,21 @@ class MainActivity : AppCompatActivity() {
     private fun updateDownloadStatus() {
         val count = Downloads.inProgressCount()
         if (count > 0) {
+            val ring = binding.btnDownloads.dlProgress
             val determinate = Downloads.allInProgressHaveKnownTotal()
-            if (binding.dlStatus.visibility != View.VISIBLE) {
+            if (ring.visibility != View.VISIBLE) {
                 // Material's indicator throws if switched to indeterminate while
                 // visible, so this must be decided before it first becomes visible.
-                binding.dlProgress.isIndeterminate = !determinate
-                binding.dlStatus.visibility = View.VISIBLE
+                ring.isIndeterminate = !determinate
+                ring.visibility = View.VISIBLE
             }
-            binding.dlCount.text = count.toString()
             if (determinate) {
                 // Switching to determinate while visible is always safe.
-                if (binding.dlProgress.isIndeterminate) binding.dlProgress.isIndeterminate = false
-                binding.dlProgress.setProgressCompat(Downloads.totalProgressPercent().coerceIn(0, 100), true)
+                if (ring.isIndeterminate) ring.isIndeterminate = false
+                ring.setProgressCompat(Downloads.totalProgressPercent().coerceIn(0, 100), true)
             }
-            binding.urlLeadingIcon.visibility = View.GONE
-        } else if (binding.dlStatus.visibility != View.GONE) {
-            binding.dlStatus.visibility = View.GONE
-            binding.urlLeadingIcon.visibility = View.VISIBLE
+        } else if (binding.btnDownloads.dlProgress.visibility != View.GONE) {
+            binding.btnDownloads.dlProgress.visibility = View.GONE
         }
     }
 
