@@ -151,4 +151,12 @@
     <string name="library">资料库</string>
     <string name="library_hint">书签、历史记录和下载</string>
     <string name="settings">设置</string>
+    <string name="history">历史记录</string>
+    <string name="today">今天</string>
+    <string name="yesterday">昨天</string>
+    <string name="earlier">更早</string>
+    <string name="clear_history">清除历史记录</string>
+    <string name="clear_history_confirm">将从历史记录中移除所有访问过的网页。</string>
+    <string name="search_hint">搜索</string>
+    <string name="no_results">没有匹配结果</string>
 </resources>

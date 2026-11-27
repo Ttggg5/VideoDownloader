@@ -83,9 +83,9 @@
         </service>
 
         <activity
-            android:name=".DownloadsActivity"
+            android:name=".LibraryActivity"
             android:exported="false"
-            android:label="@string/downloads" />
+            android:label="@string/library" />
 
         <service
             android:name=".DownloadService"

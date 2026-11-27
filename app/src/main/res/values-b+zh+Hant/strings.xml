@@ -151,4 +151,12 @@
     <string name="library">資料庫</string>
     <string name="library_hint">書籤、歷史記錄和下載</string>
     <string name="settings">設定</string>
+    <string name="history">歷史記錄</string>
+    <string name="today">今天</string>
+    <string name="yesterday">昨天</string>
+    <string name="earlier">更早</string>
+    <string name="clear_history">清除歷史記錄</string>
+    <string name="clear_history_confirm">將從歷史記錄中移除所有造訪過的網頁。</string>
+    <string name="search_hint">搜尋</string>
+    <string name="no_results">沒有相符結果</string>
 </resources>

@@ -1,6 +1,8 @@
 package com.vdbrowser.app
 
+import android.app.Activity
 import android.content.ActivityNotFoundException
+import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.media.ThumbnailUtils
@@ -13,6 +15,7 @@ import android.provider.MediaStore
 import android.text.format.DateUtils
 import android.util.Size
 import android.view.LayoutInflater
+import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageButton
@@ -20,6 +23,7 @@ import android.widget.ImageView
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.PopupMenu
+import androidx.appcompat.widget.SearchView
 import androidx.core.content.FileProvider
 import androidx.core.widget.ImageViewCompat
 import androidx.recyclerview.widget.ConcatAdapter
@@ -29,51 +33,64 @@ import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.chip.ChipGroup
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
+import com.google.android.material.tabs.TabLayout
 import java.io.File
+import java.util.Calendar
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
 
-/** Chrome-style full-screen downloads page: live in-progress list plus finished files. */
-class DownloadsActivity : AppCompatActivity() {
+/**
+ * Chrome-style Library: Bookmarks, History and Downloads in one full-screen page
+ * with search. Opening a bookmark or history entry returns its URL to the browser.
+ */
+class LibraryActivity : AppCompatActivity() {
 
+    enum class Section { BOOKMARKS, HISTORY, DOWNLOADS }
     private enum class Filter { ALL, VIDEOS, OTHER }
 
     private val handler = Handler(Looper.getMainLooper())
     private val thumbPool = Executors.newFixedThreadPool(2)
     private val thumbs = ConcurrentHashMap<String, Bitmap>()
 
+    private lateinit var toolbar: MaterialToolbar
     private lateinit var list: RecyclerView
     private lateinit var empty: View
+    private lateinit var emptyIcon: ImageView
+    private lateinit var emptyText: TextView
+    private lateinit var chips: View
     private lateinit var progressHeader: HeaderAdapter
     private lateinit var progressAdapter: DownloadProgressAdapter
     private lateinit var doneHeader: HeaderAdapter
     private lateinit var doneAdapter: FileAdapter
+    private var clearItem: MenuItem? = null
 
+    private var section = Section.BOOKMARKS
+    private var query = ""
     private var filter = Filter.ALL
     private var lastInProgress = -1
 
     private val poll = object : Runnable {
         override fun run() {
-            refreshProgress()
+            if (section == Section.DOWNLOADS) refreshProgress()
             handler.postDelayed(this, 700)
         }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_downloads)
+        setContentView(R.layout.activity_library)
 
-        val toolbar = findViewById<MaterialToolbar>(R.id.toolbar)
+        toolbar = findViewById(R.id.toolbar)
         toolbar.setNavigationOnClickListener { finish() }
-        toolbar.menu.add(0, 1, 0, R.string.clear_list).setShowAsAction(android.view.MenuItem.SHOW_AS_ACTION_IF_ROOM)
-        toolbar.setOnMenuItemClickListener {
-            DownloadHistory.clear(this)
-            refreshFiles()
-            true
-        }
+        setupToolbarMenu()
 
-        list = findViewById(R.id.downloadsPageList)
-        empty = findViewById(R.id.downloadsPageEmpty)
+        list = findViewById(R.id.libraryList)
+        empty = findViewById(R.id.libraryEmpty)
+        emptyIcon = findViewById(R.id.libraryEmptyIcon)
+        emptyText = findViewById(R.id.libraryEmptyText)
+        chips = findViewById(R.id.filterChipsScroll)
+        list.layoutManager = LinearLayoutManager(this)
+
         progressHeader = HeaderAdapter(getString(R.string.downloads_in_progress))
         progressAdapter = DownloadProgressAdapter(
             emptyList(),
@@ -83,8 +100,6 @@ class DownloadsActivity : AppCompatActivity() {
         )
         doneHeader = HeaderAdapter(getString(R.string.downloads_completed))
         doneAdapter = FileAdapter()
-        list.layoutManager = LinearLayoutManager(this)
-        list.adapter = ConcatAdapter(progressHeader, progressAdapter, doneHeader, doneAdapter)
 
         findViewById<ChipGroup>(R.id.filterChips).setOnCheckedStateChangeListener { _, ids ->
             filter = when (ids.firstOrNull()) {
@@ -92,14 +107,56 @@ class DownloadsActivity : AppCompatActivity() {
                 R.id.chipOther -> Filter.OTHER
                 else -> Filter.ALL
             }
-            refreshFiles()
+            render()
         }
-        refreshFiles()
+
+        val tabs = findViewById<TabLayout>(R.id.libraryTabs)
+        listOf(R.string.bookmarks, R.string.history, R.string.downloads).forEach {
+            tabs.addTab(tabs.newTab().setText(it))
+        }
+        section = runCatching {
+            Section.valueOf(intent.getStringExtra(EXTRA_SECTION) ?: "")
+        }.getOrDefault(Section.BOOKMARKS)
+        tabs.getTabAt(section.ordinal)?.select()
+        tabs.addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
+            override fun onTabSelected(tab: TabLayout.Tab) {
+                section = Section.values()[tab.position]
+                render()
+            }
+            override fun onTabUnselected(tab: TabLayout.Tab) {}
+            override fun onTabReselected(tab: TabLayout.Tab) {}
+        })
+        render()
+    }
+
+    private fun setupToolbarMenu() {
+        val search = toolbar.menu.add(0, 1, 0, R.string.search_hint)
+            .setIcon(R.drawable.ic_search)
+            .setShowAsActionFlags(MenuItem.SHOW_AS_ACTION_ALWAYS or MenuItem.SHOW_AS_ACTION_COLLAPSE_ACTION_VIEW)
+        val sv = SearchView(toolbar.context).apply {
+            queryHint = getString(R.string.search_hint)
+            setOnQueryTextListener(object : SearchView.OnQueryTextListener {
+                override fun onQueryTextSubmit(q: String?) = true
+                override fun onQueryTextChange(q: String?): Boolean {
+                    query = q.orEmpty().trim()
+                    render()
+                    return true
+                }
+            })
+        }
+        search.actionView = sv
+        clearItem = toolbar.menu.add(0, 2, 1, R.string.clear)
+            .setShowAsActionFlags(MenuItem.SHOW_AS_ACTION_NEVER)
+        toolbar.setOnMenuItemClickListener { item ->
+            if (item.itemId == 2) confirmClear()
+            true
+        }
     }
 
     override fun onResume() {
         super.onResume()
         handler.post(poll)
+        render()
     }
 
     override fun onPause() {
@@ -112,21 +169,108 @@ class DownloadsActivity : AppCompatActivity() {
         super.onDestroy()
     }
 
+    private fun matches(vararg fields: String) =
+        query.isEmpty() || fields.any { it.contains(query, ignoreCase = true) }
+
+    // ------------------------------------------------------------- Render
+
+    private fun render() {
+        chips.visibility = if (section == Section.DOWNLOADS) View.VISIBLE else View.GONE
+        clearItem?.isVisible = section != Section.BOOKMARKS
+        clearItem?.setTitle(if (section == Section.DOWNLOADS) R.string.clear_list else R.string.clear_history)
+        when (section) {
+            Section.BOOKMARKS -> renderBookmarks()
+            Section.HISTORY -> renderHistory()
+            Section.DOWNLOADS -> renderDownloads()
+        }
+    }
+
+    private fun showEmpty(none: Boolean, icon: Int, text: Int) {
+        empty.visibility = if (none) View.VISIBLE else View.GONE
+        emptyIcon.setImageResource(icon)
+        emptyText.setText(if (query.isNotEmpty()) R.string.no_results else text)
+    }
+
+    private fun renderBookmarks() {
+        val items = Bookmarks.all(this).filter { matches(it.title, it.url) }.toMutableList()
+        lateinit var adapter: BookmarkAdapter
+        adapter = BookmarkAdapter(
+            items,
+            onOpen = { openUrl(it.url) },
+            onDelete = { pos, item ->
+                val storeIndex = Bookmarks.all(this).indexOfFirst { it.url == item.url }
+                Bookmarks.remove(this, item.url)
+                showEmpty(adapter.itemCount == 0, R.drawable.ic_bookmarks, R.string.no_bookmarks)
+                Snackbar.make(list, R.string.bookmark_removed, Snackbar.LENGTH_LONG)
+                    .setAction(R.string.undo) {
+                        Bookmarks.insert(this, storeIndex, item)
+                        adapter.restore(pos, item)
+                        showEmpty(false, R.drawable.ic_bookmarks, R.string.no_bookmarks)
+                    }.show()
+            }
+        )
+        list.adapter = adapter
+        showEmpty(items.isEmpty(), R.drawable.ic_bookmarks, R.string.no_bookmarks)
+    }
+
+    /** History grouped under Today / Yesterday / Earlier. */
+    private fun renderHistory() {
+        val all = BrowsingHistory.all(this).filter { matches(it.title, it.url) }
+        val today = startOfDay(0)
+        val yesterday = startOfDay(-1)
+        val groups = listOf(
+            R.string.today to all.filter { it.time >= today },
+            R.string.yesterday to all.filter { it.time in yesterday until today },
+            R.string.earlier to all.filter { it.time < yesterday }
+        ).filter { it.second.isNotEmpty() }
+
+        val parts = ArrayList<RecyclerView.Adapter<out RecyclerView.ViewHolder>>()
+        groups.forEach { (title, entries) ->
+            parts.add(HeaderAdapter(getString(title)).also { it.visible = true })
+            parts.add(
+                BrowsingHistoryAdapter(
+                    entries.toMutableList(),
+                    onOpen = { openUrl(it.url) },
+                    onDelete = { entry ->
+                        BrowsingHistory.remove(this, entry.url)
+                        render()
+                    }
+                )
+            )
+        }
+        list.adapter = ConcatAdapter(parts)
+        showEmpty(all.isEmpty(), R.drawable.ic_history, R.string.no_page_history)
+    }
+
+    private fun startOfDay(offsetDays: Int): Long = Calendar.getInstance().apply {
+        add(Calendar.DAY_OF_YEAR, offsetDays)
+        set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0)
+        set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
+    }.timeInMillis
+
+    private fun renderDownloads() {
+        if (list.adapter !is ConcatAdapter || (list.adapter as ConcatAdapter).adapters.firstOrNull() !== progressHeader) {
+            list.adapter = ConcatAdapter(progressHeader, progressAdapter, doneHeader, doneAdapter)
+        }
+        refreshFiles()
+        refreshProgress()
+    }
+
     private fun refreshProgress() {
         val active = Downloads.snapshot().filter {
-            it.state == Downloads.State.RUNNING || it.state == Downloads.State.PAUSED
+            (it.state == Downloads.State.RUNNING || it.state == Downloads.State.PAUSED) && matches(it.title)
         }
         progressAdapter.submit(active)
         progressHeader.visible = active.isNotEmpty()
         // A download just finished: it now belongs in the completed list.
         if (lastInProgress >= 0 && active.size < lastInProgress) refreshFiles()
         lastInProgress = active.size
-        updateEmpty()
+        updateDownloadsEmpty()
     }
 
     private fun refreshFiles() {
         val entries = DownloadHistory.all(this).filter {
-            when (filter) {
+            matches(it.title) && when (filter) {
                 Filter.ALL -> true
                 Filter.VIDEOS -> isVideo(it)
                 Filter.OTHER -> !isVideo(it)
@@ -134,12 +278,35 @@ class DownloadsActivity : AppCompatActivity() {
         }
         doneAdapter.submit(entries)
         doneHeader.visible = entries.isNotEmpty()
-        updateEmpty()
+        updateDownloadsEmpty()
     }
 
-    private fun updateEmpty() {
-        val none = progressAdapter.itemCount == 0 && doneAdapter.itemCount == 0
-        empty.visibility = if (none) View.VISIBLE else View.GONE
+    private fun updateDownloadsEmpty() {
+        if (section != Section.DOWNLOADS) return
+        showEmpty(
+            progressAdapter.itemCount == 0 && doneAdapter.itemCount == 0,
+            R.drawable.ic_download, R.string.no_downloads
+        )
+    }
+
+    // ------------------------------------------------------------ Actions
+
+    private fun openUrl(url: String) {
+        setResult(Activity.RESULT_OK, Intent().putExtra(EXTRA_URL, url))
+        finish()
+    }
+
+    private fun confirmClear() {
+        when (section) {
+            Section.HISTORY -> MaterialAlertDialogBuilder(this)
+                .setTitle(R.string.clear_history)
+                .setMessage(R.string.clear_history_confirm)
+                .setPositiveButton(R.string.clear) { _, _ -> BrowsingHistory.clear(this); render() }
+                .setNegativeButton(R.string.cancel, null)
+                .show()
+            Section.DOWNLOADS -> { DownloadHistory.clear(this); render() }
+            Section.BOOKMARKS -> Unit
+        }
     }
 
     private fun isVideo(e: DownloadHistory.Entry): Boolean {
@@ -299,7 +466,7 @@ class DownloadsActivity : AppCompatActivity() {
 
             holder.itemView.setOnClickListener { if (done) open(e) }
             holder.more.setOnClickListener { v ->
-                val menu = PopupMenu(this@DownloadsActivity, v)
+                val menu = PopupMenu(this@LibraryActivity, v)
                 if (done) {
                     menu.menu.add(0, 1, 0, R.string.open)
                     menu.menu.add(0, 2, 1, R.string.share)
@@ -318,5 +485,13 @@ class DownloadsActivity : AppCompatActivity() {
         }
 
         override fun getItemCount() = items.size
+    }
+
+    companion object {
+        const val EXTRA_SECTION = "section"
+        const val EXTRA_URL = "url"
+
+        fun intent(context: Context, section: Section) =
+            Intent(context, LibraryActivity::class.java).putExtra(EXTRA_SECTION, section.name)
     }
 }

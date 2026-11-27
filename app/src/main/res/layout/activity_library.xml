@@ -13,10 +13,19 @@
         android:layout_height="?attr/actionBarSize"
         app:navigationContentDescription="@string/back"
         app:navigationIcon="@drawable/ic_back"
-        app:title="@string/downloads"
+        app:title="@string/library"
         app:titleTextAppearance="?attr/textAppearanceTitleLarge" />
 
+    <com.google.android.material.tabs.TabLayout
+        android:id="@+id/libraryTabs"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="?android:attr/colorBackground"
+        app:tabGravity="fill"
+        app:tabMode="fixed" />
+
     <HorizontalScrollView
+        android:id="@+id/filterChipsScroll"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:scrollbars="none">
@@ -60,25 +69,27 @@
         android:layout_weight="1">
 
         <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/downloadsPageList"
+            android:id="@+id/libraryList"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:clipToPadding="false"
+            android:paddingTop="4dp"
             android:paddingBottom="24dp" />
 
         <LinearLayout
-            android:id="@+id/downloadsPageEmpty"
+            android:id="@+id/libraryEmpty"
             style="@style/EmptyState"
             android:layout_gravity="center"
             android:visibility="gone">
 
             <ImageView
+                android:id="@+id/libraryEmptyIcon"
                 style="@style/EmptyStateIcon"
-                android:src="@drawable/ic_download" />
+                android:src="@drawable/ic_bookmarks" />
 
             <TextView
-                style="@style/EmptyStateText"
-                android:text="@string/no_downloads" />
+                android:id="@+id/libraryEmptyText"
+                style="@style/EmptyStateText" />
         </LinearLayout>
     </FrameLayout>
 </LinearLayout>

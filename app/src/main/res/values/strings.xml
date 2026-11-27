@@ -151,4 +151,12 @@
     <string name="library">Library</string>
     <string name="library_hint">Bookmarks, history and downloads</string>
     <string name="settings">Settings</string>
+    <string name="history">History</string>
+    <string name="today">Today</string>
+    <string name="yesterday">Yesterday</string>
+    <string name="earlier">Earlier</string>
+    <string name="clear_history">Clear history</string>
+    <string name="clear_history_confirm">All pages you visited will be removed from history.</string>
+    <string name="search_hint">Search</string>
+    <string name="no_results">No matches</string>
 </resources>

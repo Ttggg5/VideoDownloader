@@ -1360,13 +1360,17 @@ class MainActivity : AppCompatActivity() {
         sheet.show()
     }
 
-    private fun openLibrary() {
-        startActivity(Intent(this, DownloadsActivity::class.java))
+    /** Library returns the URL of a bookmark or history entry the user opened. */
+    private val libraryLauncher =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            result.data?.getStringExtra(LibraryActivity.EXTRA_URL)?.let { navigate(it) }
+        }
+
+    private fun openLibrary(section: LibraryActivity.Section = LibraryActivity.Section.BOOKMARKS) {
+        libraryLauncher.launch(LibraryActivity.intent(this, section))
     }
 
-    private fun openDownloadsPage() {
-        startActivity(Intent(this, DownloadsActivity::class.java))
-    }
+    private fun openDownloadsPage() = openLibrary(LibraryActivity.Section.DOWNLOADS)
 
     // ------------------------------------------------ Share / find / zoom
 
@@ -1475,82 +1479,6 @@ class MainActivity : AppCompatActivity() {
             Bookmarks.add(this, currentTab.title, url)
             snack(null, getString(R.string.bookmark_added))
         }
-    }
-
-    private fun showBookmarks() {
-        val sheet = BottomSheetDialog(this)
-        val content = layoutInflater.inflate(R.layout.sheet_bookmarks, null)
-        sheet.setContentView(content)
-
-        val recycler = content.findViewById<RecyclerView>(R.id.bookmarksList)
-        val empty = content.findViewById<View>(R.id.bookmarksEmpty)
-        val items = Bookmarks.all(this)
-
-        if (items.isEmpty()) {
-            recycler.visibility = View.GONE
-            empty.visibility = View.VISIBLE
-        } else {
-            recycler.visibility = View.VISIBLE
-            empty.visibility = View.GONE
-            recycler.layoutManager = LinearLayoutManager(this)
-            lateinit var adapter: BookmarkAdapter
-            fun syncEmpty() {
-                val none = adapter.itemCount == 0
-                recycler.visibility = if (none) View.GONE else View.VISIBLE
-                empty.visibility = if (none) View.VISIBLE else View.GONE
-            }
-            adapter = BookmarkAdapter(
-                items,
-                onOpen = { item -> currentTab.webView.loadUrl(item.url); sheet.dismiss() },
-                onDelete = { pos, item ->
-                    Bookmarks.remove(this, item.url)
-                    updateUrlBarIcon()
-                    syncEmpty()
-                    snack(content, getString(R.string.bookmark_removed), R.string.undo) {
-                        Bookmarks.insert(this, pos, item)
-                        adapter.restore(pos, item)
-                        updateUrlBarIcon()
-                        syncEmpty()
-                    }
-                }
-            )
-            recycler.adapter = adapter
-        }
-        sheet.setOnDismissListener { updateStartPage() }
-        sheet.show()
-    }
-
-    private fun showBrowsingHistory() {
-        val sheet = BottomSheetDialog(this)
-        val content = layoutInflater.inflate(R.layout.sheet_browsing_history, null)
-        sheet.setContentView(content)
-
-        val recycler = content.findViewById<RecyclerView>(R.id.pageHistoryList)
-        val empty = content.findViewById<View>(R.id.pageHistoryEmpty)
-        val clear = content.findViewById<View>(R.id.btnClearPageHistory)
-        val items = BrowsingHistory.all(this)
-
-        fun render(list: MutableList<BrowsingHistory.Entry>) {
-            if (list.isEmpty()) {
-                recycler.visibility = View.GONE
-                empty.visibility = View.VISIBLE
-            } else {
-                recycler.visibility = View.VISIBLE
-                empty.visibility = View.GONE
-                recycler.layoutManager = LinearLayoutManager(this)
-                recycler.adapter = BrowsingHistoryAdapter(
-                    list,
-                    onOpen = { entry -> currentTab.webView.loadUrl(entry.url); sheet.dismiss() },
-                    onDelete = { entry -> BrowsingHistory.remove(this, entry.url) }
-                )
-            }
-        }
-        render(items)
-        clear.setOnClickListener {
-            BrowsingHistory.clear(this)
-            render(mutableListOf())
-        }
-        sheet.show()
     }
 
     private fun prefs() = getSharedPreferences("settings", MODE_PRIVATE)
@@ -1831,6 +1759,10 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        if (tabs.isNotEmpty()) {
+            updateStartPage()
+            updateUrlBarIcon()
+        }
         statusHandler.post(statusUpdater)
         // Back from the "install unknown apps" setting: continue the update.
         Updater.resumePendingInstall(this)
