@@ -320,7 +320,10 @@ class MainActivity : AppCompatActivity() {
             listOf(binding.btnBack, binding.btnForward, binding.btnMenu, binding.btnDownloads.dlIcon)
                 .forEach { androidx.core.widget.ImageViewCompat.setImageTintList(it, onVarList) }
             binding.tabCount.setTextColor(onVar)
-            binding.tabCount.background?.mutate()?.setTint(onVar)
+            // Recolor only the outline: tinting a stroke-only shape also fills it,
+            // which hid the count behind a solid square.
+            (binding.tabCount.background?.mutate() as? android.graphics.drawable.GradientDrawable)
+                ?.setStroke(dp(2), onVar)
         }
     }
 
