@@ -1,66 +1,220 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="vertical"
-    android:paddingBottom="12dp">
+    android:overScrollMode="never">
 
-    <com.google.android.material.bottomsheet.BottomSheetDragHandleView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content" />
-
-    <!-- The long-pressed link -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginHorizontal="16dp"
-        android:layout_marginBottom="8dp"
-        android:background="@drawable/bg_section_card"
-        android:gravity="center_vertical"
-        android:orientation="horizontal"
-        android:padding="12dp">
+        android:orientation="vertical"
+        android:paddingBottom="12dp">
 
-        <ImageView
-            style="@style/ListLeadingIcon"
-            android:contentDescription="@null"
-            android:src="@drawable/ic_public" />
+        <com.google.android.material.bottomsheet.BottomSheetDragHandleView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
 
-        <TextView
-            android:id="@+id/linkUrl"
-            android:layout_width="0dp"
+        <!-- What was long-pressed: image thumbnail and/or link -->
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:ellipsize="middle"
-            android:maxLines="3"
-            android:textAppearance="?attr/textAppearanceBodyMedium"
-            android:textColor="?attr/colorOnSurface" />
+            android:layout_marginHorizontal="16dp"
+            android:layout_marginBottom="8dp"
+            android:background="@drawable/bg_section_card"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:padding="12dp">
+
+            <com.google.android.material.imageview.ShapeableImageView
+                android:id="@+id/linkThumb"
+                android:layout_width="56dp"
+                android:layout_height="56dp"
+                android:layout_marginEnd="12dp"
+                android:background="?attr/colorSurfaceContainerHighest"
+                android:contentDescription="@null"
+                android:scaleType="centerCrop"
+                android:visibility="gone"
+                app:shapeAppearanceOverlay="@style/ShapeAppearance.VD.Thumb" />
+
+            <ImageView
+                android:id="@+id/linkIcon"
+                style="@style/ListLeadingIcon"
+                android:contentDescription="@null"
+                android:src="@drawable/ic_public" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/linkTitle"
+                    style="@style/ListTitle"
+                    android:visibility="gone" />
+
+                <TextView
+                    android:id="@+id/linkUrl"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:ellipsize="middle"
+                    android:maxLines="2"
+                    android:textAppearance="?attr/textAppearanceBodyMedium"
+                    android:textColor="?attr/colorOnSurfaceVariant" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- Link actions -->
+        <LinearLayout
+            android:id="@+id/linkSection"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+        <LinearLayout
+            android:id="@+id/linkOpenNewTab"
+            style="@style/MenuRow">
+
+            <ImageView style="@style/MenuRowIcon" android:src="@drawable/ic_open_in_new" />
+
+            <TextView style="@style/ListTitle" android:text="@string/open_in_new_tab" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/linkOpenSwitch"
+            style="@style/MenuRow">
+
+            <ImageView style="@style/MenuRowIcon" android:src="@drawable/ic_tab_switch" />
+
+            <TextView style="@style/ListTitle" android:text="@string/open_and_switch" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/linkOpenIncognito"
+            style="@style/MenuRow">
+
+            <ImageView style="@style/MenuRowIcon" android:src="@drawable/ic_incognito" />
+
+            <TextView style="@style/ListTitle" android:text="@string/open_incognito" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/linkPreview"
+            style="@style/MenuRow">
+
+            <ImageView style="@style/MenuRowIcon" android:src="@drawable/ic_visibility" />
+
+            <TextView style="@style/ListTitle" android:text="@string/preview_page" />
+        </LinearLayout>
+
+        <com.google.android.material.divider.MaterialDivider
+            android:id="@+id/linkDivider1"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginVertical="6dp" />
+
+        <LinearLayout
+            android:id="@+id/linkDownload"
+            style="@style/MenuRow">
+
+            <ImageView style="@style/MenuRowIcon" android:src="@drawable/ic_download" />
+
+            <TextView style="@style/ListTitle" android:text="@string/download_link" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/linkCopy"
+            style="@style/MenuRow">
+
+            <ImageView style="@style/MenuRowIcon" android:src="@drawable/ic_content_copy" />
+
+            <TextView style="@style/ListTitle" android:text="@string/copy_link" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/linkCopyText"
+            style="@style/MenuRow">
+
+            <ImageView style="@style/MenuRowIcon" android:src="@drawable/ic_short_text" />
+
+            <TextView style="@style/ListTitle" android:text="@string/copy_link_text" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/linkShare"
+            style="@style/MenuRow">
+
+            <ImageView style="@style/MenuRowIcon" android:src="@drawable/ic_share" />
+
+            <TextView style="@style/ListTitle" android:text="@string/share_link" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/linkBookmark"
+            style="@style/MenuRow">
+
+            <ImageView style="@style/MenuRowIcon" android:src="@drawable/ic_star_border" />
+
+            <TextView style="@style/ListTitle" android:text="@string/bookmark_link" />
+        </LinearLayout>
+        </LinearLayout>
+
+        <!-- Image actions -->
+        <LinearLayout
+            android:id="@+id/imageSection"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+        <com.google.android.material.divider.MaterialDivider
+            android:id="@+id/imageDivider"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginVertical="6dp" />
+
+            <TextView
+                style="@style/OptionSectionHeader"
+                android:paddingStart="24dp"
+                android:paddingTop="4dp"
+                android:text="@string/image_section" />
+
+        <LinearLayout
+            android:id="@+id/imageOpen"
+            style="@style/MenuRow">
+
+            <ImageView style="@style/MenuRowIcon" android:src="@drawable/ic_image" />
+
+            <TextView style="@style/ListTitle" android:text="@string/open_image" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/imageDownload"
+            style="@style/MenuRow">
+
+            <ImageView style="@style/MenuRowIcon" android:src="@drawable/ic_download" />
+
+            <TextView style="@style/ListTitle" android:text="@string/download_image" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/imageCopy"
+            style="@style/MenuRow">
+
+            <ImageView style="@style/MenuRowIcon" android:src="@drawable/ic_content_copy" />
+
+            <TextView style="@style/ListTitle" android:text="@string/copy_image_link" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/imageShare"
+            style="@style/MenuRow">
+
+            <ImageView style="@style/MenuRowIcon" android:src="@drawable/ic_share" />
+
+            <TextView style="@style/ListTitle" android:text="@string/share_image" />
+        </LinearLayout>
+        </LinearLayout>
     </LinearLayout>
-
-    <LinearLayout
-        android:id="@+id/linkOpenNewTab"
-        style="@style/ListRow.Compact"
-        android:paddingStart="24dp">
-
-        <ImageView
-            style="@style/MenuRowIcon"
-            android:src="@drawable/ic_open_in_new" />
-
-        <TextView
-            style="@style/ListTitle"
-            android:text="@string/open_in_new_tab" />
-    </LinearLayout>
-
-    <LinearLayout
-        android:id="@+id/linkCopy"
-        style="@style/ListRow.Compact"
-        android:paddingStart="24dp">
-
-        <ImageView
-            style="@style/MenuRowIcon"
-            android:src="@drawable/ic_content_copy" />
-
-        <TextView
-            style="@style/ListTitle"
-            android:text="@string/copy_link" />
-    </LinearLayout>
-</LinearLayout>
+</androidx.core.widget.NestedScrollView>

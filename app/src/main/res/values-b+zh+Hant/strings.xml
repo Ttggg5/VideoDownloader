@@ -166,4 +166,19 @@
     <string name="clear_history_option">瀏覽歷史記錄</string>
     <string name="clear_cookies_option">Cookie 和網站資料</string>
     <string name="clear_cache_option">快取圖片和檔案</string>
+    <string name="open_and_switch">在新分頁中開啟並切換</string>
+    <string name="open_incognito">在無痕分頁中開啟</string>
+    <string name="preview_page">預覽網頁</string>
+    <string name="download_link">下載連結</string>
+    <string name="copy_link_text">複製連結文字</string>
+    <string name="share_link">分享連結</string>
+    <string name="bookmark_link">將連結加入書籤</string>
+    <string name="image_section">圖片</string>
+    <string name="open_image">在新分頁中開啟圖片</string>
+    <string name="download_image">下載圖片</string>
+    <string name="copy_image_link">複製圖片網址</string>
+    <string name="share_image">分享圖片</string>
+    <string name="text_copied">已複製文字</string>
+    <string name="image_share_failed">無法載入圖片</string>
+    <string name="open_as_tab">以分頁開啟</string>
 </resources>

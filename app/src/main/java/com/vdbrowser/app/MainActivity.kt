@@ -103,11 +103,10 @@ class MainActivity : AppCompatActivity() {
             val href = msg.data?.getString("url")
             val src = msg.data?.getString("src")
             if (!href.isNullOrBlank() && !imageSrc.isNullOrBlank() && src == imageSrc) {
-                showLinkMenu(href)
+                showLinkMenu(href, imageSrc)
             } else {
                 linkAtTouchPoint(web, tab) { found ->
-                    val url = found ?: imageSrc
-                    if (!url.isNullOrBlank()) showLinkMenu(url)
+                    if (found != null || !imageSrc.isNullOrBlank()) showLinkMenu(found, imageSrc)
                 }
             }
             true
@@ -125,6 +124,21 @@ class MainActivity : AppCompatActivity() {
         web.evaluateJavascript(js) { result ->
             val href = runCatching { org.json.JSONTokener(result).nextValue() as? String }.getOrNull()
             onResult(href?.takeIf { it.isNotBlank() })
+        }
+    }
+
+    /** Visible text of the link under the last touch (for "Copy link text"). */
+    private fun linkTextAtTouchPoint(web: WebView, tab: Tab, onResult: (String?) -> Unit) {
+        @Suppress("DEPRECATION")
+        val scale = web.scale.takeIf { it > 0f } ?: resources.displayMetrics.density
+        val x = tab.lastTouchX / scale
+        val y = tab.lastTouchY / scale
+        val js = "(function(){var e=document.elementFromPoint($x,$y);" +
+            "var a=e&&e.closest?e.closest('a[href]'):null;" +
+            "return a?(a.innerText||a.title||'').trim().substring(0,300):null;})()"
+        web.evaluateJavascript(js) { result ->
+            val text = runCatching { org.json.JSONTokener(result).nextValue() as? String }.getOrNull()
+            onResult(text?.replace(Regex("\\s+"), " ")?.trim()?.takeIf { it.isNotBlank() })
         }
     }
 
@@ -512,7 +526,7 @@ class MainActivity : AppCompatActivity() {
 
     /** Open a URL in a new tab without leaving the current one. */
     private fun openInBackgroundTab(url: String) {
-        val tab = createTab(url)
+        val tab = createTab(url, currentTab.incognito)
         tabs.add(tab)
         updateTabCount()
         snack(null, getString(R.string.opened_in_new_tab), R.string.switch_to_tab) {
@@ -521,24 +535,246 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun showLinkMenu(url: String) {
+    /**
+     * Long-press menu for a link and/or an image. [link] is null for a plain
+     * image; [image] is null for a text link.
+     */
+    private fun showLinkMenu(link: String?, image: String?) {
         val sheet = BottomSheetDialog(this)
         val content = layoutInflater.inflate(R.layout.sheet_link, null)
         sheet.setContentView(content)
+        fun row(id: Int) = content.findViewById<View>(id)
+        fun action(id: Int, block: () -> Unit) = row(id).setOnClickListener { sheet.dismiss(); block() }
 
-        content.findViewById<TextView>(R.id.linkUrl).text = url
-        // javascript:, mailto:, #... links can't be loaded in a fresh tab.
-        val isWeb = url.startsWith("http://", true) || url.startsWith("https://", true)
-        content.findViewById<View>(R.id.linkOpenNewTab).visibility = if (isWeb) View.VISIBLE else View.GONE
-        content.findViewById<View>(R.id.linkOpenNewTab).setOnClickListener {
-            openInBackgroundTab(url)
-            sheet.dismiss()
+        // Header: thumbnail for images, the link (or image) address, and the link text when known.
+        val title = content.findViewById<TextView>(R.id.linkTitle)
+        content.findViewById<TextView>(R.id.linkUrl).text = link ?: image
+        val thumb = content.findViewById<android.widget.ImageView>(R.id.linkThumb)
+        if (image != null && isFetchable(image)) {
+            content.findViewById<View>(R.id.linkIcon).visibility = View.GONE
+            thumb.visibility = View.VISIBLE
+            loadImageThumb(image) { bmp -> if (bmp != null) thumb.setImageBitmap(bmp) }
         }
-        content.findViewById<View>(R.id.linkCopy).setOnClickListener {
-            val clip = getSystemService(CLIPBOARD_SERVICE) as ClipboardManager
-            clip.setPrimaryClip(ClipData.newPlainText("url", url))
-            snack(null, getString(R.string.link_copied))
+
+        // ---- Link actions
+        val isWeb = link != null && isFetchable(link)
+        row(R.id.linkSection).visibility = if (link != null) View.VISIBLE else View.GONE
+        // javascript:, mailto:, #... links can't be loaded in a tab or downloaded.
+        listOf(R.id.linkOpenNewTab, R.id.linkOpenSwitch, R.id.linkOpenIncognito, R.id.linkPreview,
+            R.id.linkDivider1, R.id.linkDownload, R.id.linkShare, R.id.linkBookmark)
+            .forEach { row(it).visibility = if (isWeb) View.VISIBLE else View.GONE }
+        row(R.id.linkOpenIncognito).visibility =
+            if (isWeb && !currentTab.incognito) View.VISIBLE else View.GONE
+        row(R.id.linkCopyText).visibility = View.GONE
+        var linkText: String? = null
+        if (link != null) {
+            linkTextAtTouchPoint(currentTab.webView, currentTab) { text ->
+                linkText = text
+                if (text != null && sheet.isShowing) {
+                    title.text = text
+                    title.visibility = View.VISIBLE
+                    row(R.id.linkCopyText).visibility = View.VISIBLE
+                }
+            }
+            action(R.id.linkOpenNewTab) { openInBackgroundTab(link) }
+            action(R.id.linkOpenSwitch) { addTabAndSelect(createTab(link, currentTab.incognito)) }
+            action(R.id.linkOpenIncognito) { addTabAndSelect(createTab(link, incognito = true)) }
+            action(R.id.linkPreview) { showPreview(link) }
+            action(R.id.linkDownload) { downloadLink(link) }
+            action(R.id.linkCopy) { copyText(link, R.string.link_copied) }
+            action(R.id.linkCopyText) { linkText?.let { copyText(it, R.string.text_copied) } }
+            action(R.id.linkShare) { shareText(link, linkText) }
+            action(R.id.linkBookmark) {
+                Bookmarks.add(this, linkText ?: SpeedDial.host(link), link)
+                snack(null, getString(R.string.bookmark_added))
+            }
+        }
+
+        // ---- Image actions (data:/blob: images have no address to open or fetch)
+        if (image != null && isFetchable(image)) {
+            row(R.id.imageSection).visibility = View.VISIBLE
+            row(R.id.imageDivider).visibility = if (link != null) View.VISIBLE else View.GONE
+            action(R.id.imageOpen) { openInBackgroundTab(image) }
+            action(R.id.imageDownload) { downloadImage(image) }
+            action(R.id.imageCopy) { copyText(image, R.string.link_copied) }
+            action(R.id.imageShare) { shareImage(image) }
+        }
+        sheet.show()
+    }
+
+    /** Small preview of a page image for the menu header (decoded at reduced size). */
+    private fun loadImageThumb(url: String, onResult: (Bitmap?) -> Unit) {
+        val referer = currentTab.url
+        val ua = currentUa
+        Thread {
+            val bmp = runCatching {
+                val conn = java.net.URL(url).openConnection() as java.net.HttpURLConnection
+                conn.connectTimeout = 8000
+                conn.readTimeout = 8000
+                conn.setRequestProperty("User-Agent", ua)
+                if (referer.isNotBlank()) conn.setRequestProperty("Referer", referer)
+                try {
+                    val bytes = conn.inputStream.use { it.readBytes() }
+                    val bounds = android.graphics.BitmapFactory.Options().apply { inJustDecodeBounds = true }
+                    android.graphics.BitmapFactory.decodeByteArray(bytes, 0, bytes.size, bounds)
+                    var sample = 1
+                    while (bounds.outWidth / (sample * 2) >= 160 && bounds.outHeight / (sample * 2) >= 160) sample *= 2
+                    android.graphics.BitmapFactory.decodeByteArray(
+                        bytes, 0, bytes.size, android.graphics.BitmapFactory.Options().apply { inSampleSize = sample }
+                    )
+                } finally {
+                    conn.disconnect()
+                }
+            }.getOrNull()
+            runOnUiThread { onResult(bmp) }
+        }.start()
+    }
+
+    private fun isFetchable(url: String) =
+        url.startsWith("http://", true) || url.startsWith("https://", true)
+
+    private fun copyText(text: String, toast: Int) {
+        val clip = getSystemService(CLIPBOARD_SERVICE) as ClipboardManager
+        clip.setPrimaryClip(ClipData.newPlainText("text", text))
+        snack(null, getString(toast))
+    }
+
+    private fun shareText(url: String, subject: String?) {
+        val send = Intent(Intent.ACTION_SEND)
+            .setType("text/plain")
+            .putExtra(Intent.EXTRA_TEXT, url)
+        subject?.let { send.putExtra(Intent.EXTRA_SUBJECT, it) }
+        startActivity(Intent.createChooser(send, getString(R.string.share_link)))
+    }
+
+    /**
+     * A link to a file downloads directly; a link to a page is scanned in the
+     * background for videos, the same way as sharing it to "Download video".
+     */
+    private fun downloadLink(url: String) {
+        val name = URLUtil.guessFileName(url, null, null)
+        val ext = name.substringAfterLast('.', "").lowercase()
+        if (ext in DIRECT_DOWNLOAD_EXTS) {
+            DownloadHelper.enqueue(this, MediaItem(url, ext, name, isStream = ext == "m3u8"), currentTab.url, currentUa)
+        } else {
+            startActivity(
+                Intent(this, ShareDownloadActivity::class.java)
+                    .setAction(Intent.ACTION_SEND)
+                    .setType("text/plain")
+                    .putExtra(Intent.EXTRA_TEXT, url)
+            )
+        }
+    }
+
+    private fun imageName(url: String): Pair<String, String> {
+        val guessed = URLUtil.guessFileName(url, null, "image/*")
+        val ext = guessed.substringAfterLast('.', "").lowercase()
+            .takeIf { it in IMAGE_EXTS } ?: "jpg"
+        val base = guessed.substringBeforeLast('.').ifBlank { "image" }
+        return "$base.$ext" to ext
+    }
+
+    private fun downloadImage(url: String) {
+        val (name, ext) = imageName(url)
+        DownloadHelper.enqueue(this, MediaItem(url, ext, name, isStream = false), currentTab.url, currentUa, name)
+    }
+
+    /** Fetch the image into the app cache and hand the file to the share sheet. */
+    private fun shareImage(url: String) {
+        val (name, ext) = imageName(url)
+        val referer = currentTab.url
+        val ua = currentUa
+        Thread {
+            val file = runCatching {
+                val dir = java.io.File(cacheDir, "shared").apply { mkdirs() }
+                dir.listFiles()?.forEach { it.delete() }
+                val out = java.io.File(dir, name)
+                val conn = java.net.URL(url).openConnection() as java.net.HttpURLConnection
+                conn.connectTimeout = 10_000
+                conn.readTimeout = 15_000
+                conn.setRequestProperty("User-Agent", ua)
+                if (referer.isNotBlank()) conn.setRequestProperty("Referer", referer)
+                CookieManager.getInstance().getCookie(url)?.let { conn.setRequestProperty("Cookie", it) }
+                try {
+                    if (conn.responseCode !in 200..299) null
+                    else { conn.inputStream.use { input -> out.outputStream().use { input.copyTo(it) } }; out }
+                } finally {
+                    conn.disconnect()
+                }
+            }.getOrNull()
+            runOnUiThread {
+                if (file == null || isFinishing) {
+                    snack(null, getString(R.string.image_share_failed))
+                    return@runOnUiThread
+                }
+                val uri = androidx.core.content.FileProvider.getUriForFile(this, "$packageName.updates", file)
+                val send = Intent(Intent.ACTION_SEND)
+                    .setType(if (ext == "jpg") "image/jpeg" else "image/$ext")
+                    .putExtra(Intent.EXTRA_STREAM, uri)
+                    .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                startActivity(Intent.createChooser(send, getString(R.string.share_image)))
+            }
+        }.start()
+    }
+
+    /** Chrome-style "Preview page": the link in a sheet over the current page. */
+    @SuppressLint("SetJavaScriptEnabled")
+    private fun showPreview(url: String) {
+        val sheet = BottomSheetDialog(this)
+        val content = layoutInflater.inflate(R.layout.sheet_preview, null)
+        sheet.setContentView(content)
+        val holder = content.findViewById<FrameLayout>(R.id.previewHolder)
+        holder.layoutParams.height = (resources.displayMetrics.heightPixels * 0.72f).toInt()
+        val titleView = content.findViewById<TextView>(R.id.previewTitle)
+        val hostView = content.findViewById<TextView>(R.id.previewHost)
+        val progress = content.findViewById<View>(R.id.previewProgress)
+        hostView.text = SpeedDial.host(url)
+
+        val incognito = currentTab.incognito
+        val web = WebView(this)
+        // Like incognito tabs, a preview opened from one must not touch normal cookies.
+        if (incognito && incognitoProfileSupported) {
+            runCatching { WebViewCompat.setProfile(web, INCOGNITO_PROFILE) }
+        }
+        web.settings.apply {
+            javaScriptEnabled = true
+            domStorageEnabled = true
+            loadWithOverviewMode = true
+            useWideViewPort = true
+            mixedContentMode = WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE
+            userAgentString = currentUa
+            textZoom = this@MainActivity.textZoom
+        }
+        web.webViewClient = object : WebViewClient() {
+            override fun shouldInterceptRequest(view: WebView?, request: WebResourceRequest?): WebResourceResponse? {
+                val u = request?.url?.toString() ?: return null
+                return if (adBlockEnabled && AdBlocker.shouldBlock(u)) AdBlocker.blockedResponse() else null
+            }
+            override fun onPageStarted(view: WebView?, u: String?, favicon: Bitmap?) {
+                progress.visibility = View.VISIBLE
+                u?.let { hostView.text = SpeedDial.host(it) }
+            }
+            override fun onPageFinished(view: WebView?, u: String?) {
+                progress.visibility = View.GONE
+                titleView.text = view?.title.orEmpty()
+            }
+        }
+        holder.addView(web, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
+        web.loadUrl(url)
+
+        content.findViewById<View>(R.id.previewClose).setOnClickListener { sheet.dismiss() }
+        content.findViewById<View>(R.id.previewOpen).setOnClickListener {
+            val target = web.url ?: url
             sheet.dismiss()
+            addTabAndSelect(createTab(target, incognito))
+        }
+        // The page scrolls inside the sheet, so the sheet itself must not be dragged.
+        sheet.behavior.isDraggable = false
+        sheet.behavior.state = com.google.android.material.bottomsheet.BottomSheetBehavior.STATE_EXPANDED
+        sheet.behavior.skipCollapsed = true
+        sheet.setOnDismissListener {
+            (web.parent as? ViewGroup)?.removeView(web)
+            web.destroy()
         }
         sheet.show()
     }
@@ -682,12 +918,17 @@ class MainActivity : AppCompatActivity() {
             when (hit.type) {
                 // extra is the href of the link under this exact press.
                 WebView.HitTestResult.SRC_ANCHOR_TYPE -> {
-                    if (!extra.isNullOrBlank()) showLinkMenu(extra)
+                    if (!extra.isNullOrBlank()) showLinkMenu(extra, null)
                     true
                 }
                 // extra is the image's src; the link around it must be looked up.
                 WebView.HitTestResult.SRC_IMAGE_ANCHOR_TYPE -> {
                     resolveImageLink(web, tab, extra)
+                    true
+                }
+                // A plain image (not inside a link).
+                WebView.HitTestResult.IMAGE_TYPE -> {
+                    if (!extra.isNullOrBlank()) showLinkMenu(null, extra)
                     true
                 }
                 else -> false
@@ -1544,6 +1785,13 @@ class MainActivity : AppCompatActivity() {
 
     companion object {
         private const val INCOGNITO_PROFILE = "incognito"
+        private val IMAGE_EXTS = setOf("jpg", "jpeg", "png", "gif", "webp", "bmp", "svg", "avif", "heic")
+        /** Link targets saved directly by "Download link" (anything else is scanned for videos). */
+        private val DIRECT_DOWNLOAD_EXTS = IMAGE_EXTS + setOf(
+            "mp4", "m4v", "webm", "mkv", "mov", "3gp", "avi", "flv", "ts", "m3u8",
+            "mp3", "m4a", "aac", "ogg", "opus", "wav", "flac",
+            "pdf", "zip", "rar", "7z", "apk", "txt", "epub", "doc", "docx", "xls", "xlsx", "ppt", "pptx"
+        )
         private const val UPDATE_CHECK_INTERVAL_MS = 24L * 60 * 60 * 1000
         const val DESKTOP_UA =
             "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) " +

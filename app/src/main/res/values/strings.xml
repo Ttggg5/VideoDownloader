@@ -166,4 +166,19 @@
     <string name="clear_history_option">Browsing history</string>
     <string name="clear_cookies_option">Cookies and site data</string>
     <string name="clear_cache_option">Cached images and files</string>
+    <string name="open_and_switch">Open in new tab and switch</string>
+    <string name="open_incognito">Open in incognito tab</string>
+    <string name="preview_page">Preview page</string>
+    <string name="download_link">Download link</string>
+    <string name="copy_link_text">Copy link text</string>
+    <string name="share_link">Share link</string>
+    <string name="bookmark_link">Bookmark link</string>
+    <string name="image_section">Image</string>
+    <string name="open_image">Open image in new tab</string>
+    <string name="download_image">Download image</string>
+    <string name="copy_image_link">Copy image address</string>
+    <string name="share_image">Share image</string>
+    <string name="text_copied">Text copied</string>
+    <string name="image_share_failed">Couldn\'t load the image</string>
+    <string name="open_as_tab">Open as tab</string>
 </resources>

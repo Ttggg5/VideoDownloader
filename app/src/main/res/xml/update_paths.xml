@@ -3,4 +3,6 @@
     <external-files-path name="updates" path="updates/" />
     <!-- Finished downloads on Android 9 and below (public Download folder). -->
     <external-path name="downloads" path="Download/" />
+    <!-- Images fetched for "Share image". -->
+    <cache-path name="shared" path="shared/" />
 </paths>
