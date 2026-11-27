@@ -138,7 +138,7 @@ class LibraryActivity : AppCompatActivity() {
             setOnQueryTextListener(object : SearchView.OnQueryTextListener {
                 override fun onQueryTextSubmit(q: String?) = true
                 override fun onQueryTextChange(q: String?): Boolean {
-                    query = q.orEmpty().trim()
+                    this@LibraryActivity.query = q.orEmpty().trim()
                     render()
                     return true
                 }
